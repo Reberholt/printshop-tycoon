@@ -178,9 +178,8 @@ def build_press():
     for i in range(3):
         box("ShelfTee", (0.36, 0.32, 0.05), (-0.32 + i * 0.32, 0.05, 0.27), WHITE, 0.015, root)
 
-    # Base: chunky red body with the TEX-TRYK lettering and a warning sticker.
+    # Base: chunky red body with a warning sticker (no brand lettering).
     box("Base", (1.0, 0.86, 0.16), (0, 0.04, 0.88), RED, 0.05, root)
-    text("BaseText", "TEX-TRYK", 0.095, (0.0, 0.475, 0.875), WHITE, root)
     triangle_sign("BaseWarning", (-0.4, 0.474, 0.88), 0.035, root)
     for sx in (-1, 1):
         box("Foot", (0.12, 0.12, 0.03), (sx * 0.4, 0.38, 0.795), RUBBER, 0.01, root)
