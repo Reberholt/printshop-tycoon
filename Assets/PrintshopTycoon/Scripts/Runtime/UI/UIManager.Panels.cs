@@ -16,6 +16,7 @@ namespace PrintshopTycoon
         public bool ModalOpen => modal != null;
         public bool MainMenuOpen { get; private set; }
         public bool MinigameOpen => minigame != null;
+        public HeatPressMinigameView Minigame => minigame;
 
         // ------------------------------------------------------------------ Modal infrastructure
 

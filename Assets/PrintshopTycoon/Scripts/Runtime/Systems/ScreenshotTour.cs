@@ -28,18 +28,9 @@ namespace PrintshopTycoon
             folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Screenshots"));
             Directory.CreateDirectory(folder);
 
-            // Fresh game on a throwaway save.
-            SaveManager.FileNameOverride = TourSave;
-            var old = FindFirstObjectByType<GameManager>();
-            if (old != null) Destroy(old.gameObject);
-            foreach (var name in new[] { "Workshop", "Dynamic" })
-            {
-                var go = GameObject.Find(name);
-                if (go != null) Destroy(go);
-            }
-            yield return null;
-            new SaveManager().Delete();
-            game = new GameObject("PrintshopTycoon").AddComponent<GameManager>();
+            GameManager started = null;
+            yield return DemoSetup.StartFreshGame(TourSave, g => started = g);
+            game = started;
             yield return Wait(1f);
             var s = game.Session;
 

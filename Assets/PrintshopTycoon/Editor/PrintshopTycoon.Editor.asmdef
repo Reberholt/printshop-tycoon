@@ -5,7 +5,9 @@
         "PrintshopTycoon",
         "PrintshopTycoon.Core",
         "Unity.RenderPipelines.Universal.Runtime",
-        "Unity.RenderPipelines.Core.Runtime"
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.Recorder",
+        "Unity.Recorder.Editor"
     ],
     "includePlatforms": [
         "Editor"
@@ -16,6 +18,12 @@
     "precompiledReferences": [],
     "autoReferenced": false,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.recorder",
+            "expression": "4.0.0",
+            "define": "PT_RECORDER"
+        }
+    ],
     "noEngineReferences": false
 }

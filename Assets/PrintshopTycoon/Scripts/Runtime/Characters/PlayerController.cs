@@ -49,7 +49,7 @@ namespace PrintshopTycoon
 
         void Update()
         {
-            Vector2 input = InputEnabled ? ReadInput() : Vector2.zero;
+            Vector2 input = InputEnabled || ScriptedMove.HasValue ? ReadInput() : Vector2.zero;
             Vector3 move = Vector3.zero;
             if (input.sqrMagnitude > 0.0025f && cameraTransform != null)
             {
@@ -86,8 +86,12 @@ namespace PrintshopTycoon
             }
         }
 
+        /// <summary>Demo/recording: overrides the joystick with a fixed input direction.</summary>
+        public Vector2? ScriptedMove { get; set; }
+
         Vector2 ReadInput()
         {
+            if (ScriptedMove.HasValue) return Vector2.ClampMagnitude(ScriptedMove.Value, 1f);
             Vector2 v = joystick != null ? joystick.Value : Vector2.zero;
             Vector2 k = KeyboardInput();
             if (k.sqrMagnitude > v.sqrMagnitude) v = k;

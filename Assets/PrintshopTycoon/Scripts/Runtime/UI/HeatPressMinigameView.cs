@@ -26,6 +26,9 @@ namespace PrintshopTycoon
         bool resolving;
         bool finished;
 
+        /// <summary>Demo/recording: stops by itself when the indicator is in the perfect zone.</summary>
+        public bool AutoPlay { get; set; }
+
         public void Build(GameManager gameManager, HeatPressStation pressStation, RectTransform content, Action finishedCallback)
         {
             game = gameManager;
@@ -83,6 +86,7 @@ namespace PrintshopTycoon
             indicator.anchorMax = new Vector2(logic.Position, 1.2f);
             indicator.anchoredPosition = Vector2.zero;
             if (PlayerController.InteractKeyPressed()) OnStop();
+            if (AutoPlay && Mathf.Abs(logic.Position - logic.TargetCenter) < logic.PerfectHalfWidth * 0.9f) OnStop();
         }
 
         void OnStop()
