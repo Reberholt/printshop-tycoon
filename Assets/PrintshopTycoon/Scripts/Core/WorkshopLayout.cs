@@ -14,7 +14,7 @@ namespace PrintshopTycoon.Core
         public static readonly Footprint Shelf = new Footprint(-4.6f, 6.6f, 2.2f, 1.0f);
         public static readonly Footprint OrderBoard = new Footprint(-1.2f, 7.6f, 2.0f, 0.4f);
         public static readonly Footprint DtfPrinter = new Footprint(2.2f, 6.4f, 2.0f, 1.2f);
-        public static readonly Footprint StarterPress = new Footprint(4.6f, 3.6f, 1.5f, 1.5f);
+        public static readonly Footprint StarterPress = new Footprint(4.6f, 3.6f, 1.6f, 2.4f);
         public static readonly Footprint PackingTable = new Footprint(-4.6f, -2.5f, 1.4f, 2.4f);
 
         /// <summary>Free floor where new machines can be placed.</summary>

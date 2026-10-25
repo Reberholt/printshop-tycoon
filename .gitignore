@@ -24,6 +24,7 @@
 
 # Allow the standalone .NET test project
 !/Tools/CoreTests/CoreTests.csproj
+!/Tools/CompileCheck/CompileCheck.csproj
 /Tools/CoreTests/bin/
 /Tools/CoreTests/obj/
 /Tools/CompileCheck/bin/

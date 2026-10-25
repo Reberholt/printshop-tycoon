@@ -55,7 +55,7 @@ namespace PrintshopTycoon.Core
             b.orders.Add(new OrderTemplate { id = "handball", customerKey = "customer.handball", logoId = "logo_handball", quantity = 5, reward = 170 });
             b.orders.Add(new OrderTemplate { id = "fishing", customerKey = "customer.fishing", logoId = "logo_fishing", quantity = 5, reward = 190 });
 
-            b.machines.Add(new MachineDefinition { typeId = MachineDefinition.HeatPress, nameKey = "machine.heat_press", price = 300, width = 1.5f, depth = 1.5f });
+            b.machines.Add(new MachineDefinition { typeId = MachineDefinition.HeatPress, nameKey = "machine.heat_press", price = 300, width = 1.6f, depth = 2.4f });
             return b;
         }
 
@@ -89,7 +89,7 @@ namespace PrintshopTycoon.Core
         public string typeId;
         public string nameKey;
         public int price;
-        public float width;
+        public float width;   // footprint includes the operator space in front of the machine
         public float depth;
     }
 }

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Compiles the Unity runtime scripts + PlayMode tests outside Unity, against UnityEngine 2021.3
+    reference assemblies from NuGet and small stubs for the uGUI/URP/Input System packages.
+    Catches syntax/type errors without an editor. It does NOT replace compiling in Unity 6.
+      dotnet build Tools/CompileCheck                      (legacy input path)
+      dotnet build Tools/CompileCheck -p:InputPath=New     (Input System path)
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <InputPath Condition="'$(InputPath)' == ''">Legacy</InputPath>
+    <DefineConstants Condition="'$(InputPath)' == 'Legacy'">ENABLE_LEGACY_INPUT_MANAGER</DefineConstants>
+    <DefineConstants Condition="'$(InputPath)' != 'Legacy'">ENABLE_INPUT_SYSTEM</DefineConstants>
+    <NoWarn>MSB3277;NU1701</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/PrintshopTycoon/Scripts/**/*.cs" />
+    <Compile Include="../../Assets/PrintshopTycoon/Tests/PlayMode/**/*.cs" />
+    <Compile Include="UnityPackageStubs.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+  </ItemGroup>
+</Project>
