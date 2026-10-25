@@ -27,6 +27,27 @@ namespace PrintshopTycoon.EditorTools
             Build(BuildTarget.iOS, "Builds/iOS");
         }
 
+        [MenuItem("Printshop Tycoon/Build WebGL", priority = 22)]
+        public static void BuildWebGL()
+        {
+            ProjectSetup.Run();
+            // Portrait canvas in the browser (the default WebGL template is landscape).
+            PlayerSettings.defaultWebScreenWidth = 540;
+            PlayerSettings.defaultWebScreenHeight = 960;
+            Build(BuildTarget.WebGL, "Builds/WebGL");
+        }
+
+        [MenuItem("Printshop Tycoon/Capture Screenshot Tour (Play Mode)", priority = 40)]
+        public static void CaptureScreenshots()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                EditorUtility.DisplayDialog("Printshop Tycoon", "Start Play Mode first, and set the Game view to 1080x1920.", "OK");
+                return;
+            }
+            ScreenshotTour.Begin();
+        }
+
         static void Build(BuildTarget target, string path)
         {
             string dir = Path.GetDirectoryName(path);
