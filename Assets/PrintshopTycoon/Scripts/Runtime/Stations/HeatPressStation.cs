@@ -15,6 +15,9 @@ namespace PrintshopTycoon
         Transform lidPivot;
         GameObject shirtsOnPlaten;
         Renderer statusLamp;
+        Renderer shirtsRenderer;
+        Color shownShirtColor = Color.clear;
+        Color shownLampColor = Color.clear;
         float lidAngle = -32f;
         bool forcedClosed;
 
@@ -61,6 +64,7 @@ namespace PrintshopTycoon
             {
                 station.lidPivot = pivot;
                 station.shirtsOnPlaten = shirts;
+                station.shirtsRenderer = shirts.GetComponent<Renderer>();
                 station.statusLamp = lamp.GetComponent<Renderer>();
                 pivot.localRotation = Quaternion.Euler(station.lidAngle, 0f, 0f);
             }
@@ -84,15 +88,26 @@ namespace PrintshopTycoon
             lidAngle = Mathf.MoveTowards(lidAngle, target, 160f * Time.deltaTime);
             lidPivot.localRotation = Quaternion.Euler(lidAngle, 0f, 0f);
 
-            shirtsOnPlaten.SetActive(OrderShirtsHere || workerPressing);
-            if (OrderShirtsHere)
+            bool shirtsHere = OrderShirtsHere;
+            shirtsOnPlaten.SetActive(shirtsHere || workerPressing);
+            Color shirtColor = Palette.Shirt;
+            if (shirtsHere)
             {
                 var logo = Session.Balance.FindLogo(Session.Orders.Order.LogoId);
-                shirtsOnPlaten.GetComponent<Renderer>().sharedMaterial = MaterialLibrary.Get(logo != null ? MaterialLibrary.Hex(logo.colorHex) : Palette.Shirt);
+                if (logo != null) shirtColor = MaterialLibrary.Hex(logo.colorHex);
             }
-            else shirtsOnPlaten.GetComponent<Renderer>().sharedMaterial = MaterialLibrary.Get(Palette.Shirt);
-
-            statusLamp.sharedMaterial = MaterialLibrary.Get(Occupant == null ? Palette.Valid : (closed ? Palette.UiAccent : Palette.BoardYellow));
+            Color lampColor = Occupant == null ? Palette.Valid : (closed ? Palette.UiAccent : Palette.BoardYellow);
+            // Only touch materials when something changed (no per-frame lookups on mobile).
+            if (shirtColor != shownShirtColor)
+            {
+                shownShirtColor = shirtColor;
+                shirtsRenderer.sharedMaterial = MaterialLibrary.Get(shirtColor);
+            }
+            if (lampColor != shownLampColor)
+            {
+                shownLampColor = lampColor;
+                statusLamp.sharedMaterial = MaterialLibrary.Get(lampColor);
+            }
         }
 
         public override bool TryGetAction(out string label)

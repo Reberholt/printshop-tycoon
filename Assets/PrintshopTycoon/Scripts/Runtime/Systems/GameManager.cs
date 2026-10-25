@@ -206,6 +206,7 @@ namespace PrintshopTycoon
 
         void OnBack()
         {
+            if (UI.MainMenuOpen) return; // back on the main menu must not start the game
             if (Build.IsPlacing) { CancelPlacement(); return; }
             if (UI.ModalOpen) { UI.CloseModal(); return; }
             if (Cameras.Mode == CameraMode.Factory) { SetMode(CameraMode.Character); return; }
@@ -423,14 +424,14 @@ namespace PrintshopTycoon
             Audio.Muted = !on;
         }
 
-        public void SetLanguage(string language)
+        public void SetLanguage(string language, System.Action reopenAfterSettings)
         {
             Session.Language = language;
             Loc.Language = language;
             // Rebuild the UI so every static label picks up the new language.
             Destroy(UI.gameObject); // also destroys its canvas
             CreateUI();
-            UI.ShowSettings(() => UI.ShowMainMenu());
+            UI.ShowSettings(reopenAfterSettings);
             SaveNow();
         }
 
@@ -449,6 +450,7 @@ namespace PrintshopTycoon
             resetting = true;
             saveManager.Delete();
             SetPaused(false);
+            Build.CancelPlacement();
             Destroy(world.Root.gameObject);
             Destroy(dynamicRoot.gameObject);
             Destroy(gameObject); // UI, audio, systems and marker are children / owned

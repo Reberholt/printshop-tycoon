@@ -30,6 +30,7 @@ namespace PrintshopTycoon
             CancelPlacement();
             placing = def;
             ghost = new GameObject("PlacementGhost").transform;
+            ghost.SetParent(transform, false); // owned by the GameManager, cleaned up with it
             if (def.typeId == MachineDefinition.HeatPress)
                 HeatPressStation.BuildVisual(ghost, null);
             Shapes.Box(ghost, "Footprint", new Vector3(0f, 0.03f, 0f), new Vector3(def.width, 0.04f, def.depth), Palette.Valid);

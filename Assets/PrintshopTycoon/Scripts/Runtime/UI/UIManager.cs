@@ -11,6 +11,7 @@ namespace PrintshopTycoon
     /// Portrait-first interface built in code: HUD at the top, thumb controls at the bottom,
     /// modal panels in the middle. It only reads game state and forwards taps to GameManager.
     /// </summary>
+    [DefaultExecutionOrder(100)] // world labels are placed after the camera moved
     public class UIManager : MonoBehaviour
     {
         GameManager game;
@@ -41,6 +42,7 @@ namespace PrintshopTycoon
         RectTransform modal;
         Action onModalClosed;
         RectTransform toastRoot;
+        RectTransform overlay;   // toasts + Silke, always drawn above modals
         RectTransform labelRoot;
         readonly Dictionary<object, Text> worldLabels = new Dictionary<object, Text>();
         HeatPressMinigameView minigame;
@@ -52,6 +54,7 @@ namespace PrintshopTycoon
         public VirtualJoystick Joystick => joystick;
         public FactoryTouchSurface TouchSurface => touchSurface;
         public bool ModalOpen => modal != null;
+        public bool MainMenuOpen { get; private set; }
         public bool MinigameOpen => minigame != null;
 
         public void Build(GameManager gameManager)
@@ -67,7 +70,7 @@ namespace PrintshopTycoon
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.matchWidthOrHeight = 0f; // portrait only: width drives the layout, so nothing overflows on tall phones
             canvas.gameObject.AddComponent<GraphicRaycaster>();
             canvasRect = (RectTransform)canvas.transform;
 
@@ -86,7 +89,11 @@ namespace PrintshopTycoon
             BuildCharacterControls();
             BuildFactoryControls();
             BuildPlacementBar();
-            toastRoot = UIFactory.Rect(safe, "Toasts").Stretch();
+
+            overlay = UIFactory.Rect(canvasRect, "Overlay").Stretch();
+            overlay.gameObject.AddComponent<SafeArea>().Apply();
+            silkeBubble.SetParent(overlay, false);
+            toastRoot = UIFactory.Rect(overlay, "Toasts").Stretch();
         }
 
         static void EnsureEventSystem()
@@ -103,6 +110,8 @@ namespace PrintshopTycoon
 #endif
             }
             es.pixelDragThreshold = 6;
+            // No keyboard navigation/submit: Space and WASD belong to Hue, not to UI buttons.
+            es.sendNavigationEvents = false;
         }
 
         // ------------------------------------------------------------------ HUD
@@ -292,8 +301,13 @@ namespace PrintshopTycoon
             if (available) interactImage.rectTransform.localScale = Vector3.one * (1f + Mathf.Sin(Time.unscaledTime * 6f) * 0.03f);
             else interactImage.rectTransform.localScale = Vector3.one;
 
-            UpdateWorldLabels();
             UpdatePlacementBar();
+        }
+
+        void LateUpdate()
+        {
+            if (game == null || game.Session == null) return;
+            UpdateWorldLabels();
         }
 
         /// <summary>Danish thousands separator (1.250) without depending on device culture data.</summary>
@@ -505,6 +519,7 @@ namespace PrintshopTycoon
             var content = UIFactory.Rect(card.transform, "Content").Stretch(40, 140, 40, 40);
             var list = UIFactory.VerticalList(content, 22, 0);
             list.childAlignment = TextAnchor.UpperCenter;
+            overlay.SetAsLastSibling();
             game.Audio.Play(Sfx.Click, 0.6f);
             game.OnModalChanged(true);
             return content;
@@ -516,6 +531,7 @@ namespace PrintshopTycoon
             if (minigame != null) { minigame.Abort(); minigame = null; }
             Destroy(modal.gameObject);
             modal = null;
+            MainMenuOpen = false;
         }
 
         public void CloseModal()
@@ -668,7 +684,7 @@ namespace PrintshopTycoon
             });
             ListButton(content, Loc.T("settings.language"), Palette.UiPurple, () =>
             {
-                game.SetLanguage(Loc.Language == "da" ? "en" : "da");
+                game.SetLanguage(Loc.Language == "da" ? "en" : "da", onClosed);
             });
             var reset = ListButton(content, Loc.T("menu.reset"), Palette.UiRed, null);
             reset.onClick.AddListener(() =>
@@ -706,6 +722,7 @@ namespace PrintshopTycoon
             var bg = UIFactory.Panel(canvasRect, "MainMenu", Palette.UiAccent, false, true);
             bg.rectTransform.Stretch();
             modal = bg.rectTransform;
+            MainMenuOpen = true;
             game.SetPaused(true);
             game.OnModalChanged(true);
 
@@ -734,6 +751,7 @@ namespace PrintshopTycoon
             UIFactory.Height(UIFactory.Button(buttons, "Settings", Loc.T("menu.settings"), Palette.UiBlue, () => ShowSettings(() => ShowMainMenu()), 52), 150f);
             var footer = UIFactory.Label(inner, "Footer", "Prototype v0.1  ·  Hue & Silke: placeholder", 30, new Color(1f, 1f, 1f, 0.8f), TextAnchor.MiddleCenter, FontStyle.Normal);
             footer.rectTransform.Place(new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(1000f, 60f));
+            overlay.SetAsLastSibling();
         }
     }
 }

@@ -36,7 +36,7 @@ namespace PrintshopTycoon
         {
             for (int i = 0; i < coins; i++)
             {
-                var c = Shapes.Cylinder(null, "Coin", position, 0.22f, 0.05f, Palette.UiCoin);
+                var c = Shapes.Cylinder(transform, "Coin", position, 0.22f, 0.05f, Palette.UiCoin);
                 c.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
                 Vector3 v = new Vector3(Random.Range(-1.6f, 1.6f), Random.Range(3.5f, 5.5f), Random.Range(-1.6f, 1.6f));
                 StartCoroutine(Fly(c.transform, v, 0.9f, true));
@@ -47,7 +47,7 @@ namespace PrintshopTycoon
         {
             for (int i = 0; i < 7; i++)
             {
-                var s = Shapes.Sphere(null, "Steam", position + Random.insideUnitSphere * 0.3f, Random.Range(0.18f, 0.32f), new Color(0.95f, 0.97f, 1f));
+                var s = Shapes.Sphere(transform, "Steam", position + Random.insideUnitSphere * 0.3f, Random.Range(0.18f, 0.32f), new Color(0.95f, 0.97f, 1f));
                 StartCoroutine(Fly(s.transform, new Vector3(Random.Range(-0.3f, 0.3f), Random.Range(1.2f, 2f), Random.Range(-0.3f, 0.3f)), 1.1f, false));
             }
         }

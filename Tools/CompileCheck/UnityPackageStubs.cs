@@ -4,7 +4,7 @@ using System;
 using UnityEngine.Events;
 namespace UnityEngine.EventSystems {
   public abstract class UIBehaviour : MonoBehaviour { protected virtual void OnEnable(){} protected virtual void OnDisable(){} }
-  public class EventSystem : UIBehaviour { public static EventSystem current { get; set; } public int pixelDragThreshold { get; set; } }
+  public class EventSystem : UIBehaviour { public static EventSystem current { get; set; } public int pixelDragThreshold { get; set; } public bool sendNavigationEvents { get; set; } }
   public abstract class BaseInputModule : UIBehaviour {}
   public abstract class PointerInputModule : BaseInputModule {}
   public class StandaloneInputModule : PointerInputModule {}
