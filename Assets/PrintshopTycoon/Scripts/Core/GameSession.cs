@@ -22,6 +22,7 @@ namespace PrintshopTycoon.Core
         public Wallet Wallet { get; }
         public Progression Progression { get; }
         public Inventory Inventory { get; }
+        public UpgradeState Upgrades { get; }
         public PlayerOrderFlow Orders { get; }
         public AutoJobQueue AutoJobs { get; }
         public PlacementValidator Placement { get; }
@@ -45,9 +46,10 @@ namespace PrintshopTycoon.Core
             Balance = balance ?? BalanceData.CreateDefault();
             Wallet = new Wallet(Balance.startingCoins);
             Progression = new Progression(Balance.xpPerLevel);
-            Inventory = new Inventory(Balance.startingBlankStock);
-            Orders = new PlayerOrderFlow(Balance, 0);
-            AutoJobs = new AutoJobQueue(Balance);
+            Upgrades = new UpgradeState(Balance);
+            Inventory = new Inventory(Balance.startingBlankStock, () => Upgrades.StorageCapacity);
+            Orders = new PlayerOrderFlow(Balance, 0, Upgrades, () => Progression.Level);
+            AutoJobs = new AutoJobQueue(Balance, Upgrades);
             Placement = new PlacementValidator(WorkshopLayout.BuildArea);
 
             machines.Add(new MachineInstance
@@ -64,18 +66,49 @@ namespace PrintshopTycoon.Core
         public void Tick(float deltaTime)
         {
             if (deltaTime <= 0f) return;
+            Orders.Tick(deltaTime);
             if (workers.Count > 0) AutoJobs.Tick(deltaTime);
             for (int i = 0; i < workers.Count; i++) workers[i].Tick(deltaTime, this);
         }
 
         // ---------- Shelf ----------
 
-        public ActionResult TryRestock()
+        /// <summary>Blanks one restock tap would add (limited by free shelf space).</summary>
+        public int RestockAmountFor(string productId) => Math.Min(Upgrades.RestockAmount, Inventory.FreeSpace);
+
+        public int RestockCostFor(string productId)
         {
-            if (!Wallet.TrySpend(Balance.restockCost)) return ActionResult.NotEnoughCoins;
-            Inventory.Add(Balance.restockAmount);
+            var p = Balance.FindProduct(productId);
+            return p == null ? 0 : Balance.RestockCost(p, RestockAmountFor(productId));
+        }
+
+        public bool IsProductUnlocked(string productId) => Unlocks.IsProductUnlocked(Balance, productId, Progression.Level);
+
+        /// <summary>Buys a batch of blanks. Never overfills the shelf or charges for space that isn't there.</summary>
+        public ActionResult TryRestock(string productId, out int added)
+        {
+            added = 0;
+            if (!IsProductUnlocked(productId)) return ActionResult.Locked;
+            int amount = RestockAmountFor(productId);
+            if (amount <= 0) return ActionResult.StorageFull;
+            if (!Wallet.TrySpend(RestockCostFor(productId))) return ActionResult.NotEnoughCoins;
+            Inventory.Add(productId, amount);
+            added = amount;
             return ActionResult.Ok;
         }
+
+        public ActionResult TryRestock() => TryRestock(ProductDefinition.TShirt, out _);
+
+        /// <summary>The product the shelf should restock right now (current order first).</summary>
+        public string ShelfProduct => Orders.Step == OrderStep.CollectBlanks || Orders.Step == OrderStep.Offered
+            ? Orders.Order.ProductId : ProductDefinition.TShirt;
+
+        // ---------- Upgrades ----------
+
+        public ActionResult TryBuyUpgrade(string id) => Upgrades.TryBuy(id, Progression.Level, Wallet);
+
+        public HeatPressMinigame CreateMinigame(int seed) =>
+            new HeatPressMinigame(Upgrades.IndicatorSpeed, Upgrades.GoodZoneWidth, Upgrades.PerfectZoneWidth, seed);
 
         // ---------- Player production ----------
 
@@ -107,7 +140,9 @@ namespace PrintshopTycoon.Core
             return r;
         }
 
-        public ActionResult TryPack(out int paid) => Orders.Pack(Wallet, Progression, out paid);
+        public ActionResult TryPack(out OrderPayout payout) => Orders.Pack(Wallet, Progression, out payout);
+
+        public ActionResult TryCollectTransfers() => Orders.CollectTransfers();
 
         // ---------- Station occupancy ----------
 
@@ -224,7 +259,7 @@ namespace PrintshopTycoon.Core
 
         WorkerTaskMachine CreateWorker(string id)
         {
-            var w = new WorkerTaskMachine(id, Balance);
+            var w = new WorkerTaskMachine(id, Balance, Upgrades);
             workers.Add(w);
             return w;
         }
@@ -247,20 +282,33 @@ namespace PrintshopTycoon.Core
 
         // ---------- Save / load ----------
 
+        /// <summary>Order templates of save version 1, in their v1 order (used to migrate old saves).</summary>
+        static readonly string[] LegacyV1Templates = { "first_order", "handball", "fishing" };
+
         public SaveData ToSaveData()
         {
+            var o = Orders;
             var d = new SaveData
             {
                 coins = Wallet.Coins,
                 totalXp = Progression.TotalXp,
                 completedOrders = Progression.CompletedOrders,
                 claimedRewards = Wallet.ClaimedRewards.ToList(),
-                orderSequence = Orders.Order.Sequence,
-                orderStep = (int)Orders.Step,
-                pressQuality = (int)Orders.Quality,
-                missCount = Orders.MissCount,
-                pressStationId = Orders.PressStationId,
+                orderSequence = o.Order.Sequence,
+                orderStep = (int)o.Step,
+                pressQuality = (int)o.Quality,
+                missCount = o.MissCount,
+                pressStationId = o.PressStationId,
                 blankStock = Inventory.BlankStock,
+                orderTemplateId = o.Order.TemplateId,
+                orderIsSpecial = o.Order.IsSpecial,
+                printing = o.Printing,
+                printRemaining = o.PrintRemaining,
+                pressRemaining = o.PressRemaining,
+                specialRemaining = o.SpecialRemaining,
+                specialExpired = o.SpecialExpired,
+                specialsCompleted = o.SpecialsCompleted,
+                specialCooldown = o.SpecialCooldown,
                 nextMachineSequence = nextMachineSequence,
                 nextWorkerSequence = nextWorkerSequence,
                 autoJobsQueued = AutoJobs.Queued,
@@ -269,6 +317,10 @@ namespace PrintshopTycoon.Core
                 soundOn = SoundOn,
                 language = Language,
             };
+            foreach (var kv in Inventory.All)
+                if (kv.Value > 0) d.stocks.Add(new ProductStockSave { productId = kv.Key, amount = kv.Value });
+            foreach (var kv in Upgrades.All)
+                if (kv.Value > 0) d.upgrades.Add(new UpgradeLevelSave { id = kv.Key, level = kv.Value });
             foreach (var m in machines)
                 if (m.id != WorkshopLayout.StarterPressId)
                     d.machines.Add(new MachineInstance { id = m.id, typeId = m.typeId, x = m.x, z = m.z });
@@ -283,15 +335,31 @@ namespace PrintshopTycoon.Core
             return d;
         }
 
-        /// <summary>Builds a session from a save. Invalid values are repaired instead of crashing.</summary>
+        /// <summary>
+        /// Builds a session from a save (version 1 or 2). Invalid values are repaired instead of
+        /// crashing, and nothing that was paid can be paid again.
+        /// </summary>
         public static GameSession FromSaveData(BalanceData balance, SaveData d)
         {
             var s = new GameSession(balance);
             if (d == null) return s;
+            var b = s.Balance;
 
             s.Wallet.Restore(d.coins, d.claimedRewards);
             s.Progression.Restore(d.totalXp, d.completedOrders);
-            s.Inventory.Restore(d.blankStock);
+            s.Upgrades.Restore(d.upgrades);
+
+            // Stock: v2 per product, v1 only had T-shirt blanks.
+            var stock = new List<KeyValuePair<string, int>>();
+            if (d.version >= 2 && d.stocks != null)
+            {
+                foreach (var st in d.stocks)
+                    if (st != null && b.FindProduct(st.productId) != null)
+                        stock.Add(new KeyValuePair<string, int>(st.productId, st.amount));
+            }
+            else stock.Add(new KeyValuePair<string, int>(ProductDefinition.TShirt, d.blankStock));
+            s.Inventory.Restore(stock);
+
             s.nextMachineSequence = Math.Max(1, d.nextMachineSequence);
             s.nextWorkerSequence = Math.Max(1, d.nextWorkerSequence);
             s.TutorialStep = Math.Max(0, d.tutorialStep);
@@ -303,7 +371,7 @@ namespace PrintshopTycoon.Core
                 foreach (var m in d.machines)
                 {
                     if (m == null || string.IsNullOrEmpty(m.id) || s.FindMachine(m.id) != null) continue;
-                    if (s.Balance.FindMachine(m.typeId) == null) continue;
+                    if (b.FindMachine(m.typeId) == null) continue;
                     s.machines.Add(new MachineInstance { id = m.id, typeId = m.typeId, x = m.x, z = m.z });
                     int seq;
                     if (m.id.StartsWith("machine#") && int.TryParse(m.id.Substring(8), out seq))
@@ -324,21 +392,55 @@ namespace PrintshopTycoon.Core
                     w.RestoreAssignment(machineId);
                     // Interrupted jobs go back to the queue and their shirts back on the shelf (never paid twice).
                     if (ws.hadJobInProgress) returnedJobs++;
-                    if (ws.blanksHeld > 0) s.Inventory.Add(ws.blanksHeld);
+                    if (ws.blanksHeld > 0) s.Inventory.Add(ProductDefinition.TShirt, ws.blanksHeld);
                 }
             }
             s.AutoJobs.Restore(d.autoJobsQueued + returnedJobs, d.autoJobSequence);
 
-            var step = (OrderStep)d.orderStep;
+            RestoreOrder(s, d);
+            return s;
+        }
+
+        static void RestoreOrder(GameSession s, SaveData d)
+        {
+            var b = s.Balance;
+            var flow = s.Orders;
+            int seq = Math.Max(0, d.orderSequence);
+            flow.RestoreCounters(d.specialsCompleted, d.specialCooldown);
+
+            OrderInstance order = null;
+            if (d.orderIsSpecial)
+            {
+                var def = b.FindSpecial(d.orderTemplateId);
+                if (def != null) order = OrderInstance.CreateSpecial(b, def, seq, flow.SpecialsCompleted);
+            }
+            else
+            {
+                string templateId = d.orderTemplateId;
+                if (string.IsNullOrEmpty(templateId) && d.version < 2) templateId = LegacyV1Templates[seq % LegacyV1Templates.Length];
+                var t = b.FindOrderTemplate(templateId);
+                if (t != null) order = OrderInstance.FromTemplate(b, t, seq);
+            }
+
+            if (order == null) { flow.RestartRegular(seq); return; } // unknown order: offer a fresh one
+
             string pressId = d.pressStationId;
             if (pressId != null && s.FindMachine(pressId) == null) pressId = null;
-            s.Orders.Restore(d.orderSequence, step, (PressQuality)d.pressQuality, d.missCount, pressId);
-            // If the order was already paid (e.g. crash right after payment), move on to the next one.
-            if (s.Wallet.IsClaimed(s.Orders.Order.RewardId))
-                s.Orders.Restore(d.orderSequence + 1, OrderStep.Offered, PressQuality.None, 0, null);
-            if (s.Orders.Step == OrderStep.CollectFinished)
-                s.TryReserveStation(s.Orders.PressStationId, PlayerOccupant);
-            return s;
+            flow.Restore(order, (OrderStep)d.orderStep, (PressQuality)d.pressQuality, d.missCount, pressId,
+                d.printing, d.printRemaining, d.pressRemaining, d.specialRemaining, d.specialExpired);
+
+            // Already paid (e.g. crash right after payment): move on instead of paying again.
+            if (s.Wallet.IsClaimed(flow.Order.RewardId))
+            {
+                if (flow.Order.IsSpecial)
+                {
+                    flow.RestoreCounters(flow.SpecialsCompleted + 1, b.specialCooldownOrders);
+                    flow.RestartRegular(seq);
+                }
+                else flow.RestartRegular(seq + 1);
+            }
+            if (flow.Step == OrderStep.CollectFinished)
+                s.TryReserveStation(flow.PressStationId, PlayerOccupant);
         }
     }
 }

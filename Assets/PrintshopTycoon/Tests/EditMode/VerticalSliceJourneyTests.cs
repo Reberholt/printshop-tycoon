@@ -37,10 +37,16 @@ namespace PrintshopTycoon.Tests
             Assert.AreEqual(ActionResult.Ok, s.Orders.Accept());
             Assert.AreEqual(ActionResult.Ok, s.Orders.CollectBlanks(s.Inventory));
             Assert.AreEqual(ActionResult.Ok, s.Orders.SelectLogo("logo_bakery"));
+            Assert.AreEqual(ActionResult.NotReady, s.TryCollectTransfers(), "printer needs time");
+            s.Tick(s.Upgrades.PrintSeconds + 0.1f);
+            Assert.AreEqual(ActionResult.Ok, s.TryCollectTransfers());
             Assert.AreEqual(ActionResult.Ok, s.TryBeginPlayerPress(press1));
             Assert.AreEqual(ActionResult.Ok, s.ResolvePlayerPress(press1, PressResult.Good));
+            Assert.AreEqual(ActionResult.NotReady, s.TryCollectFinished(press1), "press needs time");
+            s.Tick(s.Orders.PressRemaining + 0.1f);
             Assert.AreEqual(ActionResult.Ok, s.TryCollectFinished(press1));
-            Assert.AreEqual(ActionResult.Ok, s.TryPack(out int paid));
+            Assert.AreEqual(ActionResult.Ok, s.TryPack(out OrderPayout payout));
+            int paid = payout.Net;
             Assert.AreEqual(150, paid);
             Assert.AreEqual(650, s.Wallet.Coins);
             Assert.AreEqual(1, s.Progression.CompletedOrders);

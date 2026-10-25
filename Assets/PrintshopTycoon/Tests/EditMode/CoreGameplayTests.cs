@@ -15,11 +15,13 @@ namespace PrintshopTycoon.Tests
             var o = s.Orders;
             Assert.AreEqual(ActionResult.Ok, o.Accept());
             Assert.AreEqual(ActionResult.Ok, o.CollectBlanks(s.Inventory));
-            Assert.AreEqual(ActionResult.Ok, o.SelectLogo(o.Order.LogoId));
+            TestFlow.Print(s);
             Assert.AreEqual(ActionResult.Ok, s.TryBeginPlayerPress(WorkshopLayout.StarterPressId));
             Assert.AreEqual(ActionResult.Ok, s.ResolvePlayerPress(WorkshopLayout.StarterPressId, press));
+            TestFlow.FinishPress(s);
             Assert.AreEqual(ActionResult.Ok, s.TryCollectFinished(WorkshopLayout.StarterPressId));
-            Assert.AreEqual(ActionResult.Ok, s.TryPack(out paid));
+            Assert.AreEqual(ActionResult.Ok, s.TryPack(out OrderPayout payout));
+            paid = payout.Net;
         }
 
         // ---------- Economy ----------
@@ -57,7 +59,8 @@ namespace PrintshopTycoon.Tests
         {
             var s = NewSession();
             Assert.AreEqual(5, s.Orders.Order.Quantity);
-            Assert.AreEqual(150, s.Orders.Order.Reward);
+            Assert.AreEqual(165, s.Orders.Order.Gross);
+            Assert.AreEqual(150, s.Orders.CalculatePayout().Net, "net after DTF material");
             Assert.AreEqual(OrderStep.Offered, s.Orders.Step);
         }
 
@@ -80,7 +83,7 @@ namespace PrintshopTycoon.Tests
         {
             var s = NewSession();
             CompleteCurrentOrder(s, PressResult.Perfect, out int paid);
-            Assert.AreEqual(180, paid); // 150 + 20 %
+            Assert.AreEqual(183, paid); // 165 + 20 % - 15 material
         }
 
         [Test]
@@ -90,7 +93,7 @@ namespace PrintshopTycoon.Tests
             Assert.AreEqual(ActionResult.WrongStep, s.Orders.CollectBlanks(s.Inventory));
             s.Orders.Accept();
             Assert.AreEqual(ActionResult.WrongStep, s.Orders.SelectLogo(s.Orders.Order.LogoId));
-            Assert.AreEqual(ActionResult.WrongStep, s.TryPack(out _));
+            Assert.AreEqual(ActionResult.WrongStep, s.TryPack(out OrderPayout _));
             Assert.AreEqual(500, s.Wallet.Coins);
         }
 
@@ -109,15 +112,16 @@ namespace PrintshopTycoon.Tests
         {
             var s = NewSession();
             var o = s.Orders;
-            o.Accept(); o.CollectBlanks(s.Inventory); o.SelectLogo(o.Order.LogoId);
+            o.Accept(); o.CollectBlanks(s.Inventory); TestFlow.Print(s);
             s.TryBeginPlayerPress(WorkshopLayout.StarterPressId);
             Assert.AreEqual(ActionResult.Retry, s.ResolvePlayerPress(WorkshopLayout.StarterPressId, PressResult.Miss));
             Assert.AreEqual(ActionResult.Retry, s.ResolvePlayerPress(WorkshopLayout.StarterPressId, PressResult.Miss));
             Assert.AreEqual(ActionResult.Ok, s.ResolvePlayerPress(WorkshopLayout.StarterPressId, PressResult.Miss));
             Assert.AreEqual(PressQuality.Low, o.Quality);
+            TestFlow.FinishPress(s);
             s.TryCollectFinished(WorkshopLayout.StarterPressId);
-            s.TryPack(out int paid);
-            Assert.AreEqual(120, paid); // 150 - 20 %
+            s.TryPack(out OrderPayout payout);
+            Assert.AreEqual(117, payout.Net); // 165 - 20 % - 15 material
         }
 
         [Test]
@@ -138,7 +142,7 @@ namespace PrintshopTycoon.Tests
         {
             var s = NewSession();
             var o = s.Orders;
-            o.Accept(); o.CollectBlanks(s.Inventory); o.SelectLogo(o.Order.LogoId);
+            o.Accept(); o.CollectBlanks(s.Inventory); TestFlow.Print(s);
             s.TryBeginPlayerPress(WorkshopLayout.StarterPressId);
             s.ResolvePlayerPress(WorkshopLayout.StarterPressId, PressResult.Good);
             Assert.AreEqual(ActionResult.WrongStation, s.TryCollectFinished("machine#1"));
@@ -318,16 +322,18 @@ namespace PrintshopTycoon.Tests
         {
             var s = NewSession();
             var o = s.Orders;
-            o.Accept(); o.CollectBlanks(s.Inventory); o.SelectLogo(o.Order.LogoId);
+            o.Accept(); o.CollectBlanks(s.Inventory); TestFlow.Print(s);
             s.TryBeginPlayerPress(WorkshopLayout.StarterPressId);
             s.ResolvePlayerPress(WorkshopLayout.StarterPressId, PressResult.Perfect);
 
             var loaded = GameSession.FromSaveData(BalanceData.CreateDefault(), s.ToSaveData());
             Assert.AreEqual(OrderStep.CollectFinished, loaded.Orders.Step);
             Assert.AreEqual(GameSession.PlayerOccupant, loaded.GetOccupant(WorkshopLayout.StarterPressId));
+            Assert.AreEqual(ActionResult.NotReady, loaded.TryCollectFinished(WorkshopLayout.StarterPressId), "press timer survives the save");
+            TestFlow.FinishPress(loaded);
             Assert.AreEqual(ActionResult.Ok, loaded.TryCollectFinished(WorkshopLayout.StarterPressId));
-            Assert.AreEqual(ActionResult.Ok, loaded.TryPack(out int paid));
-            Assert.AreEqual(180, paid);
+            Assert.AreEqual(ActionResult.Ok, loaded.TryPack(out OrderPayout payout));
+            Assert.AreEqual(183, payout.Net);
         }
 
         [Test]
@@ -335,12 +341,13 @@ namespace PrintshopTycoon.Tests
         {
             var s = NewSession();
             var o = s.Orders;
-            o.Accept(); o.CollectBlanks(s.Inventory); o.SelectLogo(o.Order.LogoId);
+            o.Accept(); o.CollectBlanks(s.Inventory); TestFlow.Print(s);
             s.TryBeginPlayerPress(WorkshopLayout.StarterPressId);
             s.ResolvePlayerPress(WorkshopLayout.StarterPressId, PressResult.Good);
+            TestFlow.FinishPress(s);
             s.TryCollectFinished(WorkshopLayout.StarterPressId);
             var beforePack = s.ToSaveData();
-            s.TryPack(out _);
+            s.TryPack(out OrderPayout _);
 
             // Simulate a stale save that still says "Pack" but already contains the claimed reward.
             var stale = s.ToSaveData();

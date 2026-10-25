@@ -1,4 +1,5 @@
 using System.IO;
+using PrintshopTycoon.Core;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
@@ -33,12 +34,18 @@ namespace PrintshopTycoon.EditorTools
             EditorApplication.delayCall += () =>
             {
                 if (Application.isBatchMode || EditorApplication.isPlayingOrWillChangePlaymode) return;
-                if (!File.Exists(ScenePath) || !File.Exists(MaterialPath) || !File.Exists(UrpPath))
+                if (!File.Exists(ScenePath) || !File.Exists(MaterialPath) || !File.Exists(UrpPath) || BalanceOutdated())
                 {
                     Debug.Log("[PrintshopTycoon] First open detected - running project setup.");
                     Run();
                 }
             };
+        }
+
+        static bool BalanceOutdated()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<GameBalanceConfig>(BalancePath);
+            return existing != null && (existing.data == null || existing.data.dataVersion < BalanceData.CurrentDataVersion);
         }
 
         [MenuItem("Printshop Tycoon/Setup Project", priority = 0)]
@@ -151,7 +158,18 @@ namespace PrintshopTycoon.EditorTools
 
         static void CreateBalanceAsset()
         {
-            if (File.Exists(BalancePath)) return;
+            if (File.Exists(BalancePath))
+            {
+                // Replace balance data written by an older version (new products, upgrades, special orders).
+                var existing = AssetDatabase.LoadAssetAtPath<GameBalanceConfig>(BalancePath);
+                if (existing != null && (existing.data == null || existing.data.dataVersion < BalanceData.CurrentDataVersion))
+                {
+                    existing.data = BalanceData.CreateDefault();
+                    EditorUtility.SetDirty(existing);
+                    Debug.Log("[PrintshopTycoon] GameBalance.asset updated to data version " + BalanceData.CurrentDataVersion + ".");
+                }
+                return;
+            }
             var asset = ScriptableObject.CreateInstance<GameBalanceConfig>();
             AssetDatabase.CreateAsset(asset, BalancePath);
         }

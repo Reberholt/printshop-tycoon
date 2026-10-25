@@ -53,6 +53,15 @@ namespace PrintshopTycoon
             sun.shadowStrength = 0.55f;
             sun.transform.rotation = Quaternion.Euler(55f, 35f, 0f);
 
+            // Soft cool fill light from the other side (no shadows) so nothing is pitch dark.
+            var fill = new GameObject("Fill").AddComponent<Light>();
+            fill.transform.SetParent(root, false);
+            fill.type = LightType.Directional;
+            fill.color = new Color(0.75f, 0.85f, 1f);
+            fill.intensity = 0.35f;
+            fill.shadows = LightShadows.None;
+            fill.transform.rotation = Quaternion.Euler(40f, -150f, 0f);
+
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.85f, 0.88f, 0.95f);
             RenderSettings.ambientEquatorColor = new Color(0.78f, 0.74f, 0.70f);
@@ -136,28 +145,92 @@ namespace PrintshopTycoon
         static void BuildDecor(Transform root)
         {
             float hd = WorkshopLayout.HalfDepth, hw = WorkshopLayout.HalfWidth;
+
             // Windows on the back wall.
             foreach (var x in new[] { 3.6f, -3.8f })
             {
-                Shapes.Box(root, "WindowFrame", new Vector3(x, 2.0f, hd - 0.02f), new Vector3(1.5f, 1.0f, 0.06f), Color.white);
-                Shapes.Box(root, "WindowGlass", new Vector3(x, 2.0f, hd - 0.05f), new Vector3(1.3f, 0.8f, 0.04f), MaterialLibrary.Hex("#9ED8F0"));
+                Shapes.Box(root, "WindowFrame", new Vector3(x, 2.1f, hd - 0.02f), new Vector3(1.5f, 1.0f, 0.06f), Color.white);
+                Shapes.Box(root, "WindowGlass", new Vector3(x, 2.1f, hd - 0.05f), new Vector3(1.3f, 0.8f, 0.04f), MaterialLibrary.Hex("#9ED8F0"));
             }
-            // Posters with "print samples".
-            Shapes.Box(root, "PosterA", new Vector3(-hw + 0.03f, 1.9f, 2.5f), new Vector3(0.04f, 0.9f, 0.7f), MaterialLibrary.Hex("#FFADAD"));
-            Shapes.Box(root, "PosterB", new Vector3(-hw + 0.03f, 1.9f, 0.8f), new Vector3(0.04f, 0.9f, 0.7f), MaterialLibrary.Hex("#A0C4FF"));
-            Shapes.Box(root, "PosterC", new Vector3(hw - 0.03f, 1.9f, 6.2f), new Vector3(0.04f, 0.9f, 0.7f), MaterialLibrary.Hex("#CAFFBF"));
-            // Plants.
-            foreach (var p in new[] { new Vector3(-5.4f, 0f, -7.2f), new Vector3(5.4f, 0f, -7.2f), new Vector3(-5.4f, 0f, 1.0f) })
+
+            // Tex-Tryk banner between the board and the printer.
+            Shapes.Box(root, "Banner", new Vector3(0.45f, 2.45f, hd - 0.04f), new Vector3(0.9f, 0.7f, 0.03f), CharacterFactory.BrandRed);
+            CharacterFactory.BrandTOnWall(root, new Vector3(0.45f, 2.5f, hd - 0.07f), 0.42f, Color.white);
+
+            // Zone floors: storage (blue), production (orange), shipping (green). Build zone stays teal + dashed.
+            Zone(root, "ZoneStorage", new Vector3(-4.3f, 5.6f), new Vector2(3.4f, 3.6f), MaterialLibrary.Hex("#D8E8F5"));
+            Zone(root, "ZoneProduction", new Vector3(3.2f, 5.0f), new Vector2(5.4f, 5.4f), MaterialLibrary.Hex("#FBE3CF"));
+            Zone(root, "ZoneShipping", new Vector3(-4.5f, -2.8f), new Vector2(3.0f, 4.4f), MaterialLibrary.Hex("#DDF1DC"));
+            // Yellow safety lines around the production zone.
+            Line(root, new Vector3(3.2f, 2.3f), new Vector2(5.4f, 0.08f));
+            Line(root, new Vector3(0.5f, 5.0f), new Vector2(0.08f, 5.4f));
+
+            // Clothes rail with finished garments (west wall).
+            Shapes.Cylinder(root, "RailPole", new Vector3(-5.6f, 0.9f, -0.6f), 0.07f, 1.8f, Palette.Metal);
+            Shapes.Cylinder(root, "RailPole", new Vector3(-5.6f, 0.9f, 2.1f), 0.07f, 1.8f, Palette.Metal);
+            var bar = Shapes.Cylinder(root, "RailBar", new Vector3(-5.6f, 1.75f, 0.75f), 0.05f, 2.75f, Palette.Metal);
+            bar.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Color[] hang = { CharacterFactory.BrandRed, Color.white, MaterialLibrary.Hex("#2E86DE"), MaterialLibrary.Hex("#9EA3AB"), MaterialLibrary.Hex("#D7F21F"), CharacterFactory.Beanie, Color.white };
+            for (int i = 0; i < hang.Length; i++)
+            {
+                var shirt = Shapes.Box(root, "Hanging", new Vector3(-5.6f, 1.3f, -0.35f + i * 0.36f), new Vector3(0.55f, 0.75f, 0.06f), hang[i]);
+                shirt.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                Shapes.Box(shirt.transform, "Sleeves", new Vector3(0f, 0.35f, 0f), new Vector3(1.4f, 0.25f, 1f), hang[i]);
+                Shapes.Box(shirt.transform, "Print", new Vector3(0f, 0.1f, -0.6f), new Vector3(0.35f, 0.25f, 0.4f), i % 2 == 0 ? Palette.UiCoin : CharacterFactory.BrandRed);
+            }
+
+            // Film rolls rack next to the printer (east wall).
+            Shapes.Box(root, "FilmRack", new Vector3(5.55f, 0.75f, 6.6f), new Vector3(0.6f, 1.5f, 1.4f), Palette.MetalDark);
+            for (int i = 0; i < 3; i++)
+            {
+                var roll = Shapes.Cylinder(root, "FilmRoll", new Vector3(5.45f, 0.35f + i * 0.45f, 6.6f), 0.28f, 1.2f, i == 1 ? MaterialLibrary.Hex("#E8F4FF") : Color.white);
+                roll.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+            Shapes.Box(root, "PosterC", new Vector3(hw - 0.03f, 2.2f, 5.2f), new Vector3(0.04f, 0.8f, 0.6f), MaterialLibrary.Hex("#CAFFBF"));
+
+            // Blank stock pallet + shrink-wrapped bundles near storage.
+            Shapes.Box(root, "Pallet", new Vector3(-5.2f, 0.07f, 3.4f), new Vector3(1.0f, 0.14f, 1.0f), Palette.Wood, true);
+            for (int i = 0; i < 4; i++)
+                Shapes.Box(root, "Bundle", new Vector3(-5.2f + (i % 2 - 0.5f) * 0.46f, 0.32f + (i / 2) * 0.36f, 3.4f), new Vector3(0.42f, 0.34f, 0.8f), i % 3 == 0 ? MaterialLibrary.Hex("#F4F6F8") : Palette.Cardboard);
+            Shapes.Box(root, "Boxes", new Vector3(-5.35f, 0.3f, 4.6f), new Vector3(0.6f, 0.6f, 0.6f), Palette.Cardboard, true);
+
+            // Entrance: mannequin with a Tex-Tryk tee, bench, plants.
+            var dummy = new GameObject("Mannequin").transform;
+            dummy.SetParent(root, false);
+            dummy.localPosition = new Vector3(-2.7f, 0f, -7.3f);
+            Shapes.Cylinder(dummy, "Stand", new Vector3(0f, 0.5f, 0f), 0.08f, 1.0f, Palette.MetalDark);
+            Shapes.Capsule(dummy, "Torso", new Vector3(0f, 1.3f, 0f), 0.55f, 0.75f, CharacterFactory.BrandRed);
+            CharacterFactory.BrandTOnWall(dummy, new Vector3(0f, 1.38f, -0.29f), 0.2f, Color.white);
+            Shapes.Box(root, "Bench", new Vector3(-4.3f, 0.25f, -7.4f), new Vector3(1.4f, 0.5f, 0.5f), Palette.Wood, true);
+            foreach (var p in new[] { new Vector3(-5.5f, 0f, -7.4f), new Vector3(5.4f, 0f, -7.3f) })
             {
                 Shapes.Cylinder(root, "Pot", p + Vector3.up * 0.25f, 0.5f, 0.5f, MaterialLibrary.Hex("#E07A5F"));
                 Shapes.Sphere(root, "Leaves", p + Vector3.up * 0.8f, 0.8f, Palette.Plant);
                 Shapes.Sphere(root, "Leaves", p + new Vector3(0.15f, 1.15f, 0.1f), 0.5f, Palette.Plant);
             }
+
+            // Finished-goods corner: parcels ready for pickup.
+            for (int i = 0; i < 3; i++)
+                Shapes.Box(root, "Parcel", new Vector3(4.4f + i * 0.45f, 0.2f + (i == 1 ? 0.4f : 0f), -7.35f), new Vector3(0.42f, 0.4f, 0.42f), Palette.Cardboard);
+
+            // Wall clock and a second poster.
+            var clock = Shapes.Cylinder(root, "Clock", new Vector3(hw - 0.04f, 2.3f, 1.0f), 0.55f, 0.05f, Color.white);
+            clock.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            Shapes.Box(root, "Hand", new Vector3(hw - 0.08f, 2.38f, 1.0f), new Vector3(0.02f, 0.18f, 0.03f), Palette.UiDark);
+            Shapes.Box(root, "PosterA", new Vector3(-hw + 0.03f, 2.2f, -4.6f), new Vector3(0.04f, 0.8f, 0.6f), MaterialLibrary.Hex("#FFADAD"));
+
             // Rug in the walkway.
-            Shapes.Box(root, "Rug", new Vector3(-0.6f, 0.008f, 1.5f), new Vector3(2.0f, 0.01f, 5.0f), MaterialLibrary.Hex("#F4A261"));
-            // A stack of boxes near the shelf for flavour.
-            Shapes.Box(root, "Boxes", new Vector3(-5.3f, 0.3f, 4.0f), new Vector3(0.7f, 0.6f, 0.7f), Palette.Cardboard, true);
-            Shapes.Box(root, "Boxes", new Vector3(-5.3f, 0.85f, 4.05f), new Vector3(0.55f, 0.5f, 0.55f), Palette.Cardboard);
+            Shapes.Box(root, "Rug", new Vector3(-0.6f, 0.008f, 1.5f), new Vector3(1.6f, 0.01f, 5.0f), MaterialLibrary.Hex("#F4A261"));
+        }
+
+        static void Zone(Transform root, string name, Vector3 centerXZ, Vector2 size, Color color)
+        {
+            Shapes.Box(root, name, new Vector3(centerXZ.x, 0.003f, centerXZ.y), new Vector3(size.x, 0.004f, size.y), color);
+        }
+
+        static void Line(Transform root, Vector3 centerXZ, Vector2 size)
+        {
+            Shapes.Box(root, "SafetyLine", new Vector3(centerXZ.x, 0.006f, centerXZ.y), new Vector3(size.x, 0.004f, size.y), Palette.BoardYellow);
         }
     }
 }

@@ -29,6 +29,13 @@ namespace PrintshopTycoon
         /// <summary>Short status for the factory-mode info panel.</summary>
         public virtual string StatusText => null;
 
+        /// <summary>A running job on this station (progress bar above it); ready = waiting to be collected.</summary>
+        public virtual bool TryGetProgress(out float progress01, out bool ready)
+        {
+            progress01 = 0f; ready = false;
+            return false;
+        }
+
         public void Setup(GameManager game, Vector3 approachLocalPosition)
         {
             Game = game;
@@ -89,6 +96,9 @@ namespace PrintshopTycoon
                 case ActionResult.WrongStation: Game.UI.Toast(Loc.T("toast.wrong_press"), true); break;
                 case ActionResult.InvalidPlacement: Game.UI.Toast(Loc.T("toast.invalid_place"), true); break;
                 case ActionResult.LimitReached: Game.UI.Toast(Loc.T("toast.limit"), true); break;
+                case ActionResult.StorageFull: Game.UI.Toast(Loc.T("toast.storage_full"), true); break;
+                case ActionResult.Locked: Game.UI.Toast(Loc.T("toast.locked"), true); break;
+                case ActionResult.NotReady: Game.UI.Toast(Loc.T("toast.not_ready"), true); break;
             }
             if (result != ActionResult.Ok) Game.Audio.Play(Sfx.Error);
         }

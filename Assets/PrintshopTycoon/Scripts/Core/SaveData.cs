@@ -11,7 +11,7 @@ namespace PrintshopTycoon.Core
     [Serializable]
     public class SaveData
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;   // v2: products, upgrades, timers, special orders
 
         public int version = CurrentVersion;
         public long savedAtUtcTicks;
@@ -27,7 +27,20 @@ namespace PrintshopTycoon.Core
         public int missCount;
         public string pressStationId;
 
-        public int blankStock;
+        public int blankStock;                 // v1: T-shirt blanks (still written for reference)
+
+        // v2
+        public List<ProductStockSave> stocks = new List<ProductStockSave>();
+        public List<UpgradeLevelSave> upgrades = new List<UpgradeLevelSave>();
+        public string orderTemplateId;
+        public bool orderIsSpecial;
+        public bool printing;
+        public float printRemaining;
+        public float pressRemaining;
+        public float specialRemaining;
+        public bool specialExpired;
+        public int specialsCompleted;
+        public int specialCooldown;
 
         public int nextMachineSequence;
         public List<MachineInstance> machines = new List<MachineInstance>();
@@ -41,6 +54,20 @@ namespace PrintshopTycoon.Core
         public int tutorialStep;
         public bool soundOn = true;
         public string language = "da";
+    }
+
+    [Serializable]
+    public class ProductStockSave
+    {
+        public string productId;
+        public int amount;
+    }
+
+    [Serializable]
+    public class UpgradeLevelSave
+    {
+        public string id;
+        public int level;
     }
 
     [Serializable]

@@ -4,8 +4,10 @@ using UnityEngine;
 namespace PrintshopTycoon
 {
     /// <summary>
-    /// A heat press (starter or purchased). Used by Hue through the minigame, or by an
-    /// assigned worker. Occupancy lives in GameSession so both can never press at once.
+    /// A heat press (starter or purchased). Hue uses it through the timing minigame, then the
+    /// lid stays closed (glowing, steaming) for the press time; workers use it automatically.
+    /// Occupancy lives in GameSession so both can never press at once. Press upgrades shorten
+    /// the press time and add chrome rails / a pressure gauge.
     /// </summary>
     public class HeatPressStation : Interactable
     {
@@ -13,13 +15,19 @@ namespace PrintshopTycoon
         public static readonly Vector3 ApproachLocal = new Vector3(0f, 0f, -0.75f);
 
         Transform lidPivot;
-        GameObject shirtsOnPlaten;
+        Transform gaugeNeedle;
+        GameObject garmentsOnPlaten;
         Renderer statusLamp;
-        Renderer shirtsRenderer;
-        Color shownShirtColor = Color.clear;
+        Renderer heatGlow;
+        GameObject[] rails;
+        GameObject gauge;
         Color shownLampColor = Color.clear;
+        static readonly Color PlateGrey = MaterialLibrary.Hex("#5E6B7A");
+        string shownGarmentKey;
         float lidAngle = -32f;
+        float steamTimer;
         bool forcedClosed;
+        bool wasDone;
 
         public string MachineId { get; private set; }
 
@@ -46,63 +54,139 @@ namespace PrintshopTycoon
             m.localPosition = new Vector3(0f, 0f, BodyOffsetZ);
 
             Shapes.RoundedBox(m, "Cabinet", new Vector3(0f, 0.42f, 0f), new Vector3(1.2f, 0.84f, 1.1f), 0.18f, Palette.MetalDark);
+            Shapes.Box(m, "Drawer", new Vector3(0f, 0.45f, -0.56f), new Vector3(0.8f, 0.3f, 0.03f), Palette.Metal);
             Shapes.RoundedBox(m, "Platen", new Vector3(0f, 0.92f, -0.05f), new Vector3(1.0f, 0.12f, 0.8f), 0.12f, Palette.Metal);
+            Shapes.Box(m, "Pad", new Vector3(0f, 0.985f, -0.05f), new Vector3(0.9f, 0.02f, 0.7f), MaterialLibrary.Hex("#4A4E57"));
             Shapes.Box(m, "Column", new Vector3(0f, 1.25f, 0.45f), new Vector3(0.24f, 0.8f, 0.24f), Palette.MetalDark);
 
             var pivot = new GameObject("LidPivot").transform;
             pivot.SetParent(m, false);
             pivot.localPosition = new Vector3(0f, 1.2f, 0.45f);
             Shapes.RoundedBox(pivot, "Lid", new Vector3(0f, -0.08f, -0.48f), new Vector3(1.05f, 0.18f, 0.9f), 0.14f, Palette.PressRed);
+            var glow = Shapes.Box(pivot, "HeatPlate", new Vector3(0f, -0.18f, -0.48f), new Vector3(0.92f, 0.03f, 0.78f), MaterialLibrary.Hex("#5E6B7A"));
             var handle = Shapes.Cylinder(pivot, "Handle", new Vector3(0f, 0.02f, -0.98f), 0.1f, 0.7f, Palette.UiDark);
             handle.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            CharacterFactory.BrandT(pivot, new Vector3(0f, 0.025f, -0.48f), 0.22f);
 
-            var shirts = Shapes.Box(m, "ShirtsOnPlaten", new Vector3(0f, 1.0f, -0.05f), new Vector3(0.7f, 0.06f, 0.55f), Palette.Shirt);
-            shirts.SetActive(false);
-            var lamp = Shapes.Sphere(m, "Lamp", new Vector3(0.45f, 0.7f, -0.56f), 0.16f, Palette.Valid);
+            // Temperature display + status lamp on the cabinet front.
+            Shapes.Box(m, "Display", new Vector3(-0.32f, 0.72f, -0.56f), new Vector3(0.28f, 0.14f, 0.03f), MaterialLibrary.Hex("#1B263B"));
+            var lamp = Shapes.Sphere(m, "Lamp", new Vector3(0.38f, 0.72f, -0.57f), 0.14f, Palette.Valid);
+
+            var garments = new GameObject("GarmentsOnPlaten");
+            garments.transform.SetParent(m, false);
+            garments.transform.localPosition = new Vector3(0f, 1.0f, -0.05f);
+            garments.SetActive(false);
+
+            // Upgrade visuals: chrome rails (press speed) and a pressure gauge (press timing).
+            var rails = new GameObject[3];
+            for (int i = 0; i < 3; i++)
+            {
+                rails[i] = Shapes.Box(m, "Rail", new Vector3(-0.62f, 0.25f + i * 0.2f, 0f), new Vector3(0.03f, 0.06f, 1.0f), MaterialLibrary.Hex("#E6EBF0"));
+                rails[i].SetActive(false);
+            }
+            var gauge = new GameObject("Gauge");
+            gauge.transform.SetParent(m, false);
+            gauge.transform.localPosition = new Vector3(0.24f, 1.45f, 0.3f);
+            Shapes.Cylinder(gauge.transform, "Dial", Vector3.zero, 0.26f, 0.05f, Color.white).transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            var needle = Shapes.Box(gauge.transform, "Needle", new Vector3(0f, 0.05f, -0.035f), new Vector3(0.02f, 0.11f, 0.01f), Palette.UiRed).transform;
+            gauge.SetActive(false);
 
             if (station != null)
             {
                 station.lidPivot = pivot;
-                station.shirtsOnPlaten = shirts;
-                station.shirtsRenderer = shirts.GetComponent<Renderer>();
+                station.garmentsOnPlaten = garments;
                 station.statusLamp = lamp.GetComponent<Renderer>();
+                station.heatGlow = glow.GetComponent<Renderer>();
+                station.rails = rails;
+                station.gauge = gauge;
+                station.gaugeNeedle = needle;
                 pivot.localRotation = Quaternion.Euler(station.lidAngle, 0f, 0f);
             }
             else pivot.localRotation = Quaternion.Euler(-32f, 0f, 0f);
+        }
+
+        protected override void OnSetup()
+        {
+            Session.Upgrades.Upgraded += OnUpgraded;
+            OnUpgraded(null, 0);
+        }
+
+        void OnDestroy()
+        {
+            if (Game != null) Session.Upgrades.Upgraded -= OnUpgraded;
+        }
+
+        void OnUpgraded(string id, int level)
+        {
+            int speed = Session.Upgrades.Level(UpgradeDefinition.PressSpeed);
+            for (int i = 0; i < rails.Length; i++) rails[i].SetActive(i < speed);
+            gauge.SetActive(Session.Upgrades.Level(UpgradeDefinition.PressTiming) > 0);
+            if (id == UpgradeDefinition.PressSpeed || id == UpgradeDefinition.PressTiming)
+            {
+                Punch();
+                Game.Fx.Sparkle(TopPosition, Palette.UiCoin, 10);
+            }
         }
 
         /// <summary>Closes the lid while Hue plays the minigame.</summary>
         public void SetForcedClosed(bool closed) => forcedClosed = closed;
 
         string Occupant => Session.GetOccupant(MachineId);
-        bool OrderShirtsHere => Session.Orders.Step == OrderStep.CollectFinished && Session.Orders.PressStationId == MachineId;
+        bool OrderGarmentsHere => Session.Orders.Step == OrderStep.CollectFinished && Session.Orders.PressStationId == MachineId;
+        bool PlayerPressing => OrderGarmentsHere && !Session.Orders.PressDone;
+
+        WorkerTaskMachine WorkerHere
+        {
+            get
+            {
+                var occ = Occupant;
+                return occ != null && occ != GameSession.PlayerOccupant ? Session.Workers.FirstLike(occ) : null;
+            }
+        }
 
         void Update()
         {
             if (Game == null) return;
-            var worker = Occupant != null && Occupant != GameSession.PlayerOccupant ? Session.Workers.FirstLike(Occupant) : null;
+            var worker = WorkerHere;
             bool workerPressing = worker != null && worker.State == WorkerState.Working;
-            bool closed = forcedClosed || workerPressing;
+            bool hot = PlayerPressing || workerPressing;
+            bool closed = forcedClosed || hot;
 
             float target = closed ? 0f : -32f;
             lidAngle = Mathf.MoveTowards(lidAngle, target, 160f * Time.deltaTime);
             lidPivot.localRotation = Quaternion.Euler(lidAngle, 0f, 0f);
 
-            bool shirtsHere = OrderShirtsHere;
-            shirtsOnPlaten.SetActive(shirtsHere || workerPressing);
-            Color shirtColor = Palette.Shirt;
-            if (shirtsHere)
+            // Heat glow + steam while pressing.
+            // Two discrete colours only: MaterialLibrary caches one material per colour.
+            heatGlow.sharedMaterial = MaterialLibrary.Get(hot ? (Mathf.Repeat(Time.time * 2f, 1f) > 0.5f ? Palette.UiAccent : Palette.PressRed) : PlateGrey);
+            if (hot)
             {
-                var logo = Session.Balance.FindLogo(Session.Orders.Order.LogoId);
-                if (logo != null) shirtColor = MaterialLibrary.Hex(logo.colorHex);
+                steamTimer -= Time.deltaTime;
+                if (steamTimer <= 0f)
+                {
+                    steamTimer = 0.45f;
+                    Game.Fx.Steam(transform.position + new Vector3(0f, 1.25f, BodyOffsetZ - 0.3f), 2);
+                }
             }
-            Color lampColor = Occupant == null ? Palette.Valid : (closed ? Palette.UiAccent : Palette.BoardYellow);
-            // Only touch materials when something changed (no per-frame lookups on mobile).
-            if (shirtColor != shownShirtColor)
+            if (gauge.activeSelf)
+                gaugeNeedle.parent.localRotation = Quaternion.Euler(0f, 0f, hot ? -40f + Mathf.Sin(Time.time * 8f) * 6f : 35f);
+
+            // Garments on the platen: the order's product with its logo, or the worker's batch.
+            string key = null;
+            if (OrderGarmentsHere) key = "order:" + Session.Orders.Order.ProductId + ":" + Session.Orders.Order.LogoId;
+            else if (workerPressing) key = "worker";
+            if (key != shownGarmentKey) RebuildGarments(key);
+
+            bool done = OrderGarmentsHere && Session.Orders.PressDone;
+            if (done && !wasDone)
             {
-                shownShirtColor = shirtColor;
-                shirtsRenderer.sharedMaterial = MaterialLibrary.Get(shirtColor);
+                Game.Audio.Play(Sfx.Good, 0.7f);
+                Game.Fx.Steam(transform.position + Vector3.up * 1.3f, 6);
+                Punch();
             }
+            wasDone = done;
+
+            Color lampColor = Occupant == null ? Palette.Valid : (done ? Palette.Valid : (hot ? Palette.UiAccent : Palette.BoardYellow));
             if (lampColor != shownLampColor)
             {
                 shownLampColor = lampColor;
@@ -110,11 +194,52 @@ namespace PrintshopTycoon
             }
         }
 
+        void RebuildGarments(string key)
+        {
+            shownGarmentKey = key;
+            for (int i = garmentsOnPlaten.transform.childCount - 1; i >= 0; i--) Destroy(garmentsOnPlaten.transform.GetChild(i).gameObject);
+            garmentsOnPlaten.SetActive(key != null);
+            if (key == null) return;
+            ProductLook look;
+            Color logoColor;
+            if (key == "worker")
+            {
+                look = ProductLook.For(Session.Balance.FindProduct(ProductDefinition.TShirt));
+                logoColor = Palette.UiAccent;
+            }
+            else
+            {
+                look = ProductLook.For(Session.Balance.FindProduct(Session.Orders.Order.ProductId));
+                var logo = Session.Balance.FindLogo(Session.Orders.Order.LogoId);
+                logoColor = logo != null ? MaterialLibrary.Hex(logo.colorHex) : Palette.UiAccent;
+            }
+            GarmentFactory.Folded(garmentsOnPlaten.transform, "Garment", Vector3.zero, look, logoColor, 0.75f, 0.6f);
+        }
+
+        public override bool TryGetProgress(out float progress01, out bool ready)
+        {
+            progress01 = 0f; ready = false;
+            if (OrderGarmentsHere)
+            {
+                progress01 = Session.Orders.PressProgress;
+                ready = Session.Orders.PressDone;
+                return true;
+            }
+            var w = WorkerHere;
+            if (w != null && w.State == WorkerState.Working) { progress01 = w.TaskProgress; return true; }
+            return false;
+        }
+
         public override bool TryGetAction(out string label)
         {
-            if (OrderShirtsHere)
+            if (OrderGarmentsHere)
             {
-                label = Loc.T("act.collect");
+                if (!Session.Orders.PressDone)
+                {
+                    label = Loc.T("act.pressing", Mathf.RoundToInt(Session.Orders.PressProgress * 100f));
+                    return false;
+                }
+                label = Loc.T("act.collect_product");
                 return true;
             }
             label = Loc.T("act.press");
@@ -125,7 +250,7 @@ namespace PrintshopTycoon
 
         public override void Interact()
         {
-            if (OrderShirtsHere)
+            if (OrderGarmentsHere)
             {
                 var r = Session.TryCollectFinished(MachineId);
                 if (r == ActionResult.Ok) { Punch(); Game.Audio.Play(Sfx.Pickup); }
@@ -163,9 +288,10 @@ namespace PrintshopTycoon
                 var occ = Occupant;
                 string s = occ == null ? Loc.T("info.free")
                     : occ == GameSession.PlayerOccupant ? Loc.T("info.occupied_by_player")
-                    : Loc.T("worker." + (Session.Workers.FirstLike(occ)?.State == WorkerState.Working ? "working" : "moving"));
+                    : Loc.T("worker." + (WorkerHere?.State == WorkerState.Working ? "working" : "moving"));
                 var assigned = Session.FindWorkerAssignedTo(MachineId);
                 if (assigned != null) s += "\n" + Loc.T("info.worker", GameManager.WorkerNumber(assigned.Id));
+                s += "\n" + Loc.T("info.press_time", Session.Upgrades.PlayerPressSeconds.ToString("0.0"));
                 return s;
             }
         }

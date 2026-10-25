@@ -89,21 +89,33 @@ namespace PrintshopTycoon.Tests
         {
             var s = game.Session;
 
-            // 1. First order through the real stations.
+            // 1. First order through the real stations (with the timed printer and press).
             Assert.AreEqual(ActionResult.Ok, s.Orders.Accept());
             game.Shelf.Interact();
             Assert.AreEqual(OrderStep.PrintTransfers, s.Orders.Step);
             Assert.AreEqual(ActionResult.Ok, s.Orders.SelectLogo(s.Orders.Order.LogoId));
+            yield return new WaitForSeconds(s.Upgrades.PrintSeconds + 0.3f);
+            Assert.IsTrue(s.Orders.TransfersReady);
+            game.Printer.Interact(); // take the transfers
+            Assert.AreEqual(OrderStep.PressShirts, s.Orders.Step);
+
             var press = game.Presses[0];
             press.Interact(); // opens the minigame
             yield return null;
             Assert.IsTrue(game.UI.MinigameOpen);
             Assert.AreEqual(ActionResult.Ok, press.ApplyPressResult(PressResult.Good));
             game.UI.CloseModal();
+            Assert.AreEqual(ActionResult.NotReady, s.TryCollectFinished(press.MachineId));
+            yield return new WaitForSeconds(s.Orders.PressRemaining + 0.3f);
             press.Interact(); // collect
             Assert.AreEqual(OrderStep.Pack, s.Orders.Step);
+
+            int before = s.Wallet.Coins;
             game.Packing.Interact();
-            Assert.AreEqual(650, s.Wallet.Coins);
+            Assert.AreEqual(before + 150, s.Wallet.Coins, "net payout credited at once");
+            yield return new WaitForSeconds(2f);
+            Assert.IsTrue(game.UI.ModalOpen, "completion screen after the packing animation");
+            game.UI.CloseModal();
             yield return null;
 
             // 2. Buy and place a second heat press.
@@ -133,6 +145,50 @@ namespace PrintshopTycoon.Tests
             Assert.AreEqual(s.Wallet.Coins, loaded.Wallet.Coins);
             Assert.AreEqual(2, loaded.Machines.Count);
             Assert.AreEqual(1, loaded.Workers.Count);
+        }
+
+        [UnityTest]
+        public IEnumerator CameraSwitch_DuringPrinting_KeepsProduction()
+        {
+            var s = game.Session;
+            s.Orders.Accept();
+            game.Shelf.Interact();
+            s.Orders.SelectLogo(s.Orders.Order.LogoId);
+            game.SetMode(CameraMode.Factory);
+            yield return new WaitForSeconds(s.Upgrades.PrintSeconds * 0.5f);
+            game.SetMode(CameraMode.Character);
+            yield return new WaitForSeconds(s.Upgrades.PrintSeconds * 0.5f + 0.5f);
+            Assert.IsTrue(s.Orders.TransfersReady, "printing continued while the camera switched");
+            Assert.AreEqual(OrderStep.PrintTransfers, s.Orders.Step);
+        }
+
+        [UnityTest]
+        public IEnumerator Upgrade_BoughtInGame_ShortensPrinting()
+        {
+            var s = game.Session;
+            while (s.Progression.Level < 3) s.Progression.AddXp(50);
+            yield return null;
+            game.UI.CloseModal(); // level-up screen
+            s.Wallet.TryClaimReward("playmode-test", 2000);
+            float before = s.Upgrades.PrintSeconds;
+            game.BuyUpgrade(UpgradeDefinition.PrinterSpeed);
+            Assert.Less(s.Upgrades.PrintSeconds, before);
+            Assert.AreEqual(1, s.Upgrades.Level(UpgradeDefinition.PrinterSpeed));
+        }
+
+        [UnityTest]
+        public IEnumerator SpecialOrder_AcceptedInGame_TimerRuns()
+        {
+            var s = game.Session;
+            while (s.Progression.Level < 2) s.Progression.AddXp(50);
+            yield return null;
+            game.UI.CloseModal();
+            Assert.IsNotNull(s.Orders.OfferedSpecial);
+            game.AcceptSpecialOrder();
+            Assert.IsTrue(s.Orders.Order.IsSpecial);
+            float t0 = s.Orders.SpecialRemaining;
+            yield return new WaitForSeconds(1f);
+            Assert.Less(s.Orders.SpecialRemaining, t0);
         }
     }
 }

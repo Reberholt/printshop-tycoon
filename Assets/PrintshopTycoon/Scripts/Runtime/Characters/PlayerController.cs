@@ -15,17 +15,19 @@ namespace PrintshopTycoon
         public float turnSpeed = 720f;
 
         CharacterController controller;
-        Transform visual;
+        CharacterAnimator animator;
         Transform cameraTransform;
         VirtualJoystick joystick;
         AudioManager audioManager;
         float stepTimer;
-        float bobPhase;
         float verticalVelocity;
 
         public bool InputEnabled { get; set; } = true;
         public bool IsMoving { get; private set; }
         public CarryStack Carry { get; private set; }
+        /// <summary>True while Hue operates a machine (plays the work animation).</summary>
+        public bool Working { get; set; }
+        public CharacterAnimator Animator => animator;
 
         public void Init(Transform cam, VirtualJoystick stick, AudioManager audio)
         {
@@ -41,8 +43,8 @@ namespace PrintshopTycoon
             controller.radius = 0.35f;
             controller.center = new Vector3(0f, 0.85f, 0f);
             controller.stepOffset = 0.2f;
-            visual = transform.Find("Visual");
-            Carry = CarryStack.Create(transform, new Vector3(0f, 0.95f, 0.45f));
+            animator = GetComponent<CharacterAnimator>();
+            Carry = CarryStack.Create(transform, new Vector3(0f, 0.9f, 0.48f));
         }
 
         void Update()
@@ -70,28 +72,17 @@ namespace PrintshopTycoon
 
         void AnimateWalk(float speed01)
         {
-            if (visual == null) return;
-            if (speed01 > 0.05f)
+            if (animator == null) return;
+            bool walking = speed01 > 0.05f;
+            animator.Pose = Working ? CharacterPose.Work : (walking ? CharacterPose.Walk : CharacterPose.Idle);
+            animator.Speed = speed01;
+            animator.Carrying = Carry != null && Carry.Count > 0;
+            if (!walking) return;
+            stepTimer -= Time.deltaTime;
+            if (stepTimer <= 0f)
             {
-                bobPhase += Time.deltaTime * 14f * Mathf.Lerp(0.6f, 1f, speed01);
-                float bob = Mathf.Abs(Mathf.Sin(bobPhase)) * 0.08f;
-                visual.localPosition = new Vector3(0f, bob, 0f);
-                visual.localScale = Vector3.one;
-                visual.localRotation = Quaternion.Euler(0f, 180f, Mathf.Sin(bobPhase) * 4f);
-                stepTimer -= Time.deltaTime;
-                if (stepTimer <= 0f)
-                {
-                    stepTimer = 0.32f;
-                    if (audioManager != null) audioManager.Play(Sfx.Footstep, 0.35f);
-                }
-            }
-            else
-            {
-                // Idle "breathing" squash so Hue feels alive.
-                float breathe = Mathf.Sin(Time.time * 2.4f) * 0.015f;
-                visual.localPosition = Vector3.Lerp(visual.localPosition, Vector3.zero, Time.deltaTime * 10f);
-                visual.localScale = new Vector3(1f - breathe, 1f + breathe, 1f - breathe);
-                visual.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                stepTimer = 0.32f;
+                if (audioManager != null) audioManager.Play(Sfx.Footstep, 0.35f);
             }
         }
 

@@ -15,12 +15,11 @@ namespace PrintshopTycoon
         const float AisleX = -0.6f;   // free walkway through the middle of the workshop
 
         GameManager game;
-        Transform visual;
+        CharacterAnimator animator;
         CarryStack carry;
         readonly List<Vector3> path = new List<Vector3>();
         WorkerTarget pathTarget = (WorkerTarget)(-1);
         string pathMachine;
-        float bobPhase;
 
         public WorkerTaskMachine Machine { get; private set; }
 
@@ -33,8 +32,8 @@ namespace PrintshopTycoon
             var view = t.gameObject.AddComponent<WorkerView>();
             view.game = game;
             view.Machine = machine;
-            view.visual = t.Find("Visual");
-            view.carry = CarryStack.Create(t, new Vector3(0f, 0.9f, 0.42f));
+            view.animator = t.GetComponent<CharacterAnimator>();
+            view.carry = CarryStack.Create(t, new Vector3(0f, 0.85f, 0.45f));
             return view;
         }
 
@@ -62,7 +61,8 @@ namespace PrintshopTycoon
                     transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(face), 540f * Time.deltaTime);
             }
             Animate(moving);
-            carry.Show(Machine.BlanksHeld, Machine.State == WorkerState.MovingToPacking || Machine.State == WorkerState.Packing ? MaterialLibrary.Hex("#BDE0FE") : Palette.Shirt, null);
+            bool printed = Machine.State == WorkerState.MovingToPacking || Machine.State == WorkerState.Packing;
+            carry.Show(Machine.BlanksHeld, ProductLook.For(game.Session.Balance.FindProduct(ProductDefinition.TShirt)), printed ? Palette.UiAccent : (Color?)null);
         }
 
         Vector3 GoalPosition(out bool reportArrival)
@@ -122,7 +122,7 @@ namespace PrintshopTycoon
                 path[0] = goal;
                 return (goal - pos).sqrMagnitude > ArriveDistance * ArriveDistance;
             }
-            float step = game.Session.Balance.workerMoveSpeed * Time.deltaTime;
+            float step = Machine.MoveSpeed * Time.deltaTime;
             transform.position = pos + Vector3.ClampMagnitude(delta, step);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(delta), 720f * Time.deltaTime);
             return true;
@@ -130,18 +130,11 @@ namespace PrintshopTycoon
 
         void Animate(bool moving)
         {
-            if (visual == null) return;
-            if (moving)
-            {
-                bobPhase += Time.deltaTime * 13f;
-                visual.localPosition = new Vector3(0f, Mathf.Abs(Mathf.Sin(bobPhase)) * 0.07f, 0f);
-            }
-            else if (Machine.State == WorkerState.Working || Machine.State == WorkerState.Packing)
-            {
-                bobPhase += Time.deltaTime * 8f;
-                visual.localPosition = new Vector3(0f, Mathf.Max(0f, Mathf.Sin(bobPhase)) * 0.05f, 0f);
-            }
-            else visual.localPosition = Vector3.zero;
+            if (animator == null) return;
+            bool working = !moving && (Machine.State == WorkerState.Working || Machine.State == WorkerState.Packing);
+            animator.Pose = moving ? CharacterPose.Walk : (working ? CharacterPose.Work : CharacterPose.Idle);
+            animator.Speed = moving ? 0.8f : 0f;
+            animator.Carrying = Machine.BlanksHeld > 0 && !working;
         }
 
         public string StatusText

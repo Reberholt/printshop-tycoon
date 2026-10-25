@@ -31,7 +31,7 @@ namespace PrintshopTycoon
             game = gameManager;
             station = pressStation;
             onFinished = finishedCallback;
-            logic = new HeatPressMinigame(game.Session.Balance, Environment.TickCount);
+            logic = game.Session.CreateMinigame(Environment.TickCount); // zones and speed include upgrades
 
             var title = UIFactory.Label(content, "Title", Loc.T("press.title"), 44, Palette.UiDark);
             UIFactory.Height(title, 90f);

@@ -88,12 +88,30 @@ namespace PrintshopTycoon.Core
             }
         }
 
+        /// <summary>Raised once per level gained (new level).</summary>
+        public event Action<int> LeveledUp;
+
         public void AddXp(int xp)
         {
             if (xp <= 0) return;
+            int before = Level;
             TotalXp += xp;
             Changed?.Invoke();
+            for (int l = before + 1; l <= Level; l++) LeveledUp?.Invoke(l);
         }
+
+        /// <summary>XP gathered inside the current level and needed for the next one.</summary>
+        public int XpIntoLevel
+        {
+            get
+            {
+                int level = 1, remaining = TotalXp;
+                while (remaining >= xpPerLevel * level) { remaining -= xpPerLevel * level; level++; }
+                return remaining;
+            }
+        }
+
+        public int XpForNextLevel => xpPerLevel * Level;
 
         public void RegisterCompletedOrder()
         {

@@ -10,7 +10,7 @@ namespace PrintshopTycoon.Core
     /// </summary>
     public class HeatPressMinigame
     {
-        readonly BalanceData balance;
+        readonly float speed, goodWidth, perfectWidth;
         readonly Random random;
 
         public float Position { get; private set; }   // 0..1
@@ -18,14 +18,19 @@ namespace PrintshopTycoon.Core
         public bool Running { get; private set; }
         float direction = 1f;
 
-        public float GoodHalfWidth => balance.goodZoneWidth * 0.5f;
-        public float PerfectHalfWidth => balance.perfectZoneWidth * 0.5f;
+        public float GoodHalfWidth => goodWidth * 0.5f;
+        public float PerfectHalfWidth => perfectWidth * 0.5f;
 
-        public HeatPressMinigame(BalanceData balance, int seed)
+        public HeatPressMinigame(float indicatorSpeed, float goodZoneWidth, float perfectZoneWidth, int seed)
         {
-            this.balance = balance;
+            speed = indicatorSpeed;
+            goodWidth = goodZoneWidth;
+            perfectWidth = perfectZoneWidth;
             random = new Random(seed);
         }
+
+        public HeatPressMinigame(BalanceData balance, int seed)
+            : this(balance.indicatorSpeed, balance.goodZoneWidth, balance.perfectZoneWidth, seed) { }
 
         public void Start()
         {
@@ -40,7 +45,7 @@ namespace PrintshopTycoon.Core
         public void Tick(float deltaTime)
         {
             if (!Running || deltaTime <= 0f) return;
-            Position += direction * balance.indicatorSpeed * deltaTime;
+            Position += direction * speed * deltaTime;
             // Ping-pong, also for large steps.
             while (Position > 1f || Position < 0f)
             {

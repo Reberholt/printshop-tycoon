@@ -106,6 +106,7 @@ namespace PrintshopTycoon
             Session.WorkerHired += w => SpawnWorker(w, new Vector3(0f, 0f, -7.2f));
             Session.AutoJobCompleted += OnAutoJobCompleted;
             Session.Orders.Changed += OnOrderChanged;
+            Session.Progression.LeveledUp += OnLeveledUp;
 
             Cameras.SnapToCurrent();
             UI.ShowMainMenu();
@@ -138,6 +139,9 @@ namespace PrintshopTycoon
         {
             Session.Tick(Time.deltaTime);
             UpdatePlayerCarry();
+            Player.Working = UI.MinigameOpen;
+            UpdateSpecialOrder();
+            if (!UI.ModalOpen && pendingLevelUps.Count > 0) ShowNextLevelUp();
 
             NextTarget = ComputeNextTarget();
             bool showMarker = Cameras.Mode == CameraMode.Character && !UI.ModalOpen && NextTarget != null;
@@ -156,12 +160,15 @@ namespace PrintshopTycoon
             var o = Session.Orders;
             var logo = Session.Balance.FindLogo(o.Order.LogoId);
             Color logoColor = logo != null ? MaterialLibrary.Hex(logo.colorHex) : Palette.UiAccent;
+            var look = ProductLook.For(Session.Balance.FindProduct(o.Order.ProductId));
             switch (o.Carry)
             {
-                case CarryKind.Blanks: Player.Carry.Show(o.CarriedShirts, Palette.Shirt, null); break;
-                case CarryKind.BlanksWithTransfers: Player.Carry.Show(o.CarriedShirts, MaterialLibrary.Hex("#E8F4FF"), logoColor); break;
-                case CarryKind.Finished: Player.Carry.Show(o.CarriedShirts, Palette.Shirt, logoColor); break;
-                default: Player.Carry.Show(0, Palette.Shirt, null); break;
+                // Blanks; then blanks with the printed DTF transfer sheets on top; then finished garments.
+                case CarryKind.Blanks:
+                    Player.Carry.Show(o.CarriedShirts, look, null, o.TransfersReady ? logoColor : (Color?)null); break;
+                case CarryKind.BlanksWithTransfers: Player.Carry.Show(o.CarriedShirts, look, null, logoColor); break;
+                case CarryKind.Finished: Player.Carry.Show(o.CarriedShirts, look, logoColor); break;
+                default: Player.Carry.Show(0, look, null); break;
             }
         }
 
@@ -415,18 +422,96 @@ namespace PrintshopTycoon
         }
 
         /// <summary>Called by the packing table after a successful (single) payment.</summary>
-        public void OnOrderPaid(int paid, Vector3 where)
+        public void OnOrderPaid(OrderPayout payout, Vector3 where)
         {
             Audio.Play(Sfx.OrderComplete);
             Audio.Play(Sfx.Coin, 0.8f);
             Fx.CoinBurst(where, 14);
-            UI.FloatingCoins(where + Vector3.up * 0.6f, paid);
-            if (Session.TutorialStep == 0)
-            {
-                Session.TutorialStep = 1;
-                UI.ShowSilke(Loc.T("silke.done"), CharacterArt.SilkeMonitor, 9f);
-            }
+            Fx.Confetti(where + Vector3.up * 0.5f);
+            Player.Animator?.Celebrate();
             SaveNow();
+            bool firstOrder = Session.TutorialStep == 0;
+            if (firstOrder) Session.TutorialStep = 1;
+            // The completion screen shows exactly the payout that was credited.
+            UI.ShowOrderComplete(payout, () =>
+            {
+                if (firstOrder) UI.ShowSilke(Loc.T("silke.done"), CharacterArt.SilkeMonitor, 9f);
+            });
+        }
+
+        // ------------------------------------------------------------------ Progression
+
+        readonly List<int> pendingLevelUps = new List<int>();
+        bool specialExpiredShown;
+
+        void OnLeveledUp(int level)
+        {
+            pendingLevelUps.Add(level);
+            Audio.Play(Sfx.Perfect);
+        }
+
+        void ShowNextLevelUp()
+        {
+            int level = pendingLevelUps[0];
+            pendingLevelUps.RemoveAt(0);
+            Fx.Confetti(Player.transform.position + Vector3.up * 2f, 60);
+            Player.Animator?.Celebrate(1.6f);
+            UI.ShowLevelUp(level);
+            SaveNow();
+        }
+
+        void UpdateSpecialOrder()
+        {
+            var o = Session.Orders;
+            if (!o.Order.IsSpecial) { specialExpiredShown = false; return; }
+            if (o.SpecialExpired && !specialExpiredShown)
+            {
+                specialExpiredShown = true;
+                UI.Toast(Loc.T("toast.special_late"), true);
+                UI.ShowSilke(Loc.T("silke.special_late"), CharacterArt.SilkeQuestion);
+            }
+        }
+
+        public void BuyUpgrade(string id)
+        {
+            var r = Session.TryBuyUpgrade(id);
+            var def = Session.Balance.FindUpgrade(id);
+            switch (r)
+            {
+                case ActionResult.Ok:
+                    Audio.Play(Sfx.Purchase);
+                    UI.Toast(Loc.T("toast.upgraded", def != null ? Loc.T(def.nameKey) : id, Session.Upgrades.Level(id)));
+                    SaveNow();
+                    break;
+                case ActionResult.NotEnoughCoins: Audio.Play(Sfx.Error); UI.Toast(Loc.T("toast.no_coins"), true); break;
+                case ActionResult.Locked: Audio.Play(Sfx.Error); UI.Toast(Loc.T("toast.locked"), true); break;
+                case ActionResult.LimitReached: Audio.Play(Sfx.Error); UI.Toast(Loc.T("toast.limit"), true); break;
+            }
+        }
+
+        public void AcceptSpecialOrder()
+        {
+            if (Session.Orders.AcceptSpecial() == ActionResult.Ok)
+            {
+                Audio.Play(Sfx.Good);
+                UI.CloseModal();
+                UI.ShowSilke(Loc.T("silke.special"), CharacterArt.SilkeClipboard);
+            }
+            else Audio.Play(Sfx.Error);
+        }
+
+        public void RestockProduct(string productId)
+        {
+            var r = Session.TryRestock(productId, out int added);
+            var p = Session.Balance.FindProduct(productId);
+            string name = p != null ? Loc.T(p.nameKey) : productId;
+            switch (r)
+            {
+                case ActionResult.Ok: Audio.Play(Sfx.Purchase); UI.Toast(Loc.T("toast.restocked_product", added, name)); break;
+                case ActionResult.StorageFull: Audio.Play(Sfx.Error); UI.Toast(Loc.T("toast.storage_full"), true); break;
+                case ActionResult.Locked: Audio.Play(Sfx.Error); UI.Toast(Loc.T("toast.locked"), true); break;
+                default: Audio.Play(Sfx.Error); UI.Toast(Loc.T("toast.no_coins"), true); break;
+            }
         }
 
         // ------------------------------------------------------------------ Settings / save

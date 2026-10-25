@@ -7,6 +7,7 @@ namespace PrintshopTycoon.Core
     public class AutoJobQueue
     {
         readonly BalanceData balance;
+        readonly UpgradeState upgrades;
         readonly HashSet<string> reserved = new HashSet<string>();
         float spawnTimer;
 
@@ -14,13 +15,19 @@ namespace PrintshopTycoon.Core
         public int NextSequence { get; private set; }
         public int InProgress => reserved.Count;
 
-        public AutoJobQueue(BalanceData balance) { this.balance = balance; }
+        public AutoJobQueue(BalanceData balance, UpgradeState upgrades = null)
+        {
+            this.balance = balance;
+            this.upgrades = upgrades ?? new UpgradeState(balance);
+        }
+
+        public int MaxQueued => upgrades.MaxQueuedAutoJobs;
 
         public void Tick(float deltaTime)
         {
-            if (Queued >= balance.maxQueuedAutoJobs) { spawnTimer = 0f; return; }
+            if (Queued >= MaxQueued) { spawnTimer = 0f; return; }
             spawnTimer += deltaTime;
-            if (spawnTimer >= balance.autoJobIntervalSeconds)
+            if (spawnTimer >= upgrades.AutoJobIntervalSeconds)
             {
                 spawnTimer = 0f;
                 Queued++;
@@ -48,7 +55,7 @@ namespace PrintshopTycoon.Core
 
         internal void Restore(int queued, int nextSequence)
         {
-            Queued = Math.Max(0, Math.Min(queued, balance.maxQueuedAutoJobs));
+            Queued = Math.Max(0, Math.Min(queued, MaxQueued));
             NextSequence = Math.Max(0, nextSequence);
             reserved.Clear();
         }
@@ -76,8 +83,10 @@ namespace PrintshopTycoon.Core
     public class WorkerTaskMachine
     {
         readonly BalanceData balance;
+        readonly UpgradeState upgrades;
         bool arrived;
         float timer;
+        float duration;
 
         public string Id { get; }
         public string AssignedMachineId { get; private set; }
@@ -88,11 +97,14 @@ namespace PrintshopTycoon.Core
 
         public event Action<WorkerTaskMachine> StateChanged;
 
-        public WorkerTaskMachine(string id, BalanceData balance)
+        public WorkerTaskMachine(string id, BalanceData balance, UpgradeState upgrades = null)
         {
             Id = id;
             this.balance = balance;
+            this.upgrades = upgrades ?? new UpgradeState(balance);
         }
+
+        public float MoveSpeed => upgrades.WorkerMoveSpeed;
 
         public WorkerTarget Target
         {
@@ -115,8 +127,7 @@ namespace PrintshopTycoon.Core
         {
             get
             {
-                if (State == WorkerState.Working) return 1f - Clamp01(timer / Math.Max(0.01f, balance.workerPressSeconds));
-                if (State == WorkerState.Packing) return 1f - Clamp01(timer / Math.Max(0.01f, balance.workerPackSeconds));
+                if (State == WorkerState.Working || State == WorkerState.Packing) return 1f - Clamp01(timer / Math.Max(0.01f, duration));
                 return 0f;
             }
         }
@@ -182,7 +193,7 @@ namespace PrintshopTycoon.Core
                     {
                         arrived = false;
                         Block = WorkerBlock.None;
-                        timer = balance.workerPressSeconds;
+                        timer = duration = upgrades.WorkerPressSeconds;
                         SetState(WorkerState.Working);
                     }
                     else Block = WorkerBlock.StationBusy; // keep waiting at the station
@@ -199,7 +210,7 @@ namespace PrintshopTycoon.Core
 
                 case WorkerState.MovingToPacking:
                     if (!Consume()) return;
-                    timer = balance.workerPackSeconds;
+                    timer = duration = upgrades.WorkerPackSeconds;
                     SetState(WorkerState.Packing);
                     break;
 
