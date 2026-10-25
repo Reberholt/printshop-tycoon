@@ -36,7 +36,7 @@ namespace PrintshopTycoon
             r.Printer = DtfPrinterStation.Build(r.Root, WorkshopLayout.DtfPrinter);
             r.Packing = PackingStation.Build(r.Root, WorkshopLayout.PackingTable);
 
-            r.Silke = CharacterFactory.CreateSilkePlaceholder(r.Root);
+            r.Silke = CharacterFactory.CreateSilke(r.Root);
             r.Silke.position = new Vector3(0.0f, 0f, 6.7f);
             r.Silke.rotation = Quaternion.Euler(0f, 180f, 0f);
             return r;

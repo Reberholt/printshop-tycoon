@@ -29,7 +29,7 @@
 ## Første gang i Unity
 
 1. **Installér Unity 6 LTS** (6000.0.x) via Unity Hub – med **Android Build Support** (og **iOS Build Support** på Mac).
-2. Unity Hub → **Add → Add project from disk** → vælg mappen `apps/printshop-tycoon`.
+2. Unity Hub → **Add → Add project from disk** → vælg mappen `printshop-tycoon` (roden af dette repo).
 3. Vent mens Unity henter pakker (URP, uGUI, Input System, Test Framework).
 4. **Opsætning kører automatisk** første gang. Ellers: menu **Printshop Tycoon → Setup Project**. Den:
    - sætter portræt, bundle-id `dk.reberholt.printshoptycoon`, IL2CPP/ARM64, iOS 13+
@@ -81,8 +81,10 @@ Assets/PrintshopTycoon/
 │   ├── UI/             HUD, menuer, minigame – bygget i kode
 │   ├── Audio/          lyde genereres i koden (ingen licens-problemer)
 │   └── World/          værkstedet bygget af simple former
+├── Resources/         ← Hue/Silke-billeder til UI
 ├── Editor/            ← opsætning + build-scripts
 └── Tests/             ← EditMode (logik) + PlayMode (hele forløbet i Unity)
+Art/Reference/        ← officielle Hue & Silke referencer (importeres ikke af Unity)
 Tools/
 ├── CoreTests/         ← kør logik-tests uden Unity
 └── CompileCheck/      ← compile Unity-koden uden Unity (fanger tastefejl, ikke alt)
@@ -96,7 +98,7 @@ Tools/
 Kræver .NET 8 SDK.
 
 ```bash
-cd apps/printshop-tycoon
+cd printshop-tycoon
 dotnet test Tools/CoreTests                       # 31 logik-tests
 dotnet build Tools/CompileCheck                   # compile-check (legacy input)
 dotnet build Tools/CompileCheck -p:InputPath=New  # compile-check (Input System)
@@ -104,15 +106,19 @@ dotnet build Tools/CompileCheck -p:InputPath=New  # compile-check (Input System)
 
 ## Hue og Silke
 
-- **Figurerne er midlertidige placeholders** (farvede kapsler med kasket/hestehale).
-- Deres rigtige udseende skal laves ud fra **jeres referencebilleder**. Intet design er opfundet eller låst.
-- Udskiftning: `Characters/CharacterFactory.cs` – gameplay bruger kun rod-objektet og `Visual`-barnet.
+- **Officielle referencer** ligger i `Art/Reference/` (15 billeder i fuld størrelse – til fremtidige 3D-modeller).
+- **I spillet** bruges udklippede versioner (`Resources/PrintshopTycoon/Characters/`):
+  - hovedmenu: Hue og Silke byder velkommen
+  - Silke-guiden skifter billede efter trin (clipboard, lup, tommestok, skærm …)
+  - logo-valg: Hue med DTF-transfer
+- **3D-figurerne** er enkle former i jeres stil: sort hue med rødt T, grå hættetrøje, sorte Tex-Tryk-overalls, sorte støvler med beige sål. Hue har brunt hår, Silke har lyst hår med hestehale.
+- **Næste skridt:** rigtige 3D-modeller lavet ud fra referencerne. Skift i `Characters/CharacterFactory.cs` – gameplay bruger kun rod-objektet og `Visual`-barnet.
 
 ## Kendte begrænsninger
 
 - **Ikke kørt i Unity endnu** – forvent små rettelser første gang (layout, kameravinkel, tekststørrelser).
 - Medarbejdere går ad en simpel midtergang, ikke NavMesh – de kan gå gennem maskiner.
-- Ingen musik, ingen rigtige 3D-modeller, ingen animationer ud over simple "hop".
+- Ingen musik og ingen rigtige 3D-modeller endnu – figurerne er simple former i Hue/Silke-stil. Ingen animationer ud over simple "hop".
 - Ingen offline-indtjening endnu (gem-filen har tidsstempel, så det kan bygges på).
 - Engelsk er klar i tekst-tabellen, men ikke gennemlæst.
 
@@ -121,7 +127,7 @@ dotnet build Tools/CompileCheck -p:InputPath=New  # compile-check (Input System)
 1. Åbn i Unity 6, kør opsætning, ret evt. fejl, kør PlayMode-testen.
 2. Test på en rigtig Android-telefon (mellemklasse) – mål FPS.
 3. Justér kamera, knapstørrelser og tekst på små skærme.
-4. Referencebilleder af Hue og Silke → rigtige modeller.
+4. Rigtige 3D-modeller af Hue og Silke ud fra `Art/Reference/`.
 5. Næste spil-lag: hastigheds-opgraderinger, flere ordretyper, offline-indtjening.
 
 ---

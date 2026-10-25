@@ -23,7 +23,7 @@ namespace UnityEngine.UI {
   public class VertexHelper { public void Clear(){} }
   public abstract class Graphic : UIBehaviour { public virtual Color color { get; set; } public virtual bool raycastTarget { get; set; } public RectTransform rectTransform => null; protected virtual void OnPopulateMesh(VertexHelper vh){} }
   public abstract class MaskableGraphic : Graphic {}
-  public class Image : MaskableGraphic { public enum Type { Simple, Sliced, Tiled, Filled } public Sprite sprite { get; set; } public Type type { get; set; } }
+  public class Image : MaskableGraphic { public enum Type { Simple, Sliced, Tiled, Filled } public Sprite sprite { get; set; } public Type type { get; set; } public bool preserveAspect { get; set; } }
   public class Text : MaskableGraphic { public Font font { get; set; } public virtual string text { get; set; } public int fontSize { get; set; } public FontStyle fontStyle { get; set; } public TextAnchor alignment { get; set; } public HorizontalWrapMode horizontalOverflow { get; set; } public VerticalWrapMode verticalOverflow { get; set; } public bool resizeTextForBestFit { get; set; } public int resizeTextMinSize { get; set; } public int resizeTextMaxSize { get; set; } public bool supportRichText { get; set; } }
   public struct ColorBlock { public Color normalColor { get; set; } public Color highlightedColor { get; set; } public Color pressedColor { get; set; } public Color selectedColor { get; set; } public Color disabledColor { get; set; } public float colorMultiplier { get; set; } public float fadeDuration { get; set; } }
   public class Selectable : UIBehaviour { public bool interactable { get; set; } public ColorBlock colors { get; set; } }

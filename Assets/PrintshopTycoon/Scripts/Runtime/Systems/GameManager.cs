@@ -78,7 +78,7 @@ namespace PrintshopTycoon
             world.Packing.Setup(this, new Vector3(1.2f, 0f, 0f));
 
             // Hue
-            var hue = CharacterFactory.CreateHuePlaceholder(dynamicRoot);
+            var hue = CharacterFactory.CreateHue(dynamicRoot);
             hue.gameObject.AddComponent<CharacterController>();
             Player = hue.gameObject.AddComponent<PlayerController>();
             Player.Teleport(new Vector3(0f, 0f, -5.5f), 0f);
@@ -237,7 +237,7 @@ namespace PrintshopTycoon
             if (!open && !introShown)
             {
                 introShown = true;
-                if (Session.TutorialStep == 0) UI.ShowSilke(Loc.T("silke." + (int)Session.Orders.Step));
+                if (Session.TutorialStep == 0) UI.ShowSilke(Loc.T("silke." + (int)Session.Orders.Step), SilkePoseForStep(Session.Orders.Step));
             }
         }
 
@@ -309,7 +309,7 @@ namespace PrintshopTycoon
             if (Session.TutorialStep <= 1)
             {
                 Session.TutorialStep = 2;
-                UI.ShowSilke(Loc.T("silke.hire"));
+                UI.ShowSilke(Loc.T("silke.hire"), CharacterArt.SilkeQuestion);
             }
             SaveNow();
         }
@@ -354,7 +354,7 @@ namespace PrintshopTycoon
             if (Session.TutorialStep <= 2)
             {
                 Session.TutorialStep = 3;
-                UI.ShowSilke(Loc.T("silke.auto"));
+                UI.ShowSilke(Loc.T("silke.auto"), CharacterArt.SilkeClipboard);
             }
             SaveNow();
         }
@@ -398,7 +398,20 @@ namespace PrintshopTycoon
             if (step == lastStep) return;
             lastStep = step;
             if (Session.TutorialStep == 0 && step != OrderStep.Offered)
-                UI.ShowSilke(Loc.T("silke." + (int)step));
+                UI.ShowSilke(Loc.T("silke." + (int)step), SilkePoseForStep(step));
+        }
+
+        static string SilkePoseForStep(OrderStep step)
+        {
+            switch (step)
+            {
+                case OrderStep.CollectBlanks: return CharacterArt.SilkeClipboard;
+                case OrderStep.PrintTransfers: return CharacterArt.SilkeMagnifier;
+                case OrderStep.PressShirts: return CharacterArt.SilkeMeasure;
+                case OrderStep.CollectFinished: return CharacterArt.SilkeWave;
+                case OrderStep.Pack: return CharacterArt.SilkeClipboard;
+                default: return CharacterArt.SilkeWave;
+            }
         }
 
         /// <summary>Called by the packing table after a successful (single) payment.</summary>
@@ -411,7 +424,7 @@ namespace PrintshopTycoon
             if (Session.TutorialStep == 0)
             {
                 Session.TutorialStep = 1;
-                UI.ShowSilke(Loc.T("silke.done"), 9f);
+                UI.ShowSilke(Loc.T("silke.done"), CharacterArt.SilkeMonitor, 9f);
             }
             SaveNow();
         }

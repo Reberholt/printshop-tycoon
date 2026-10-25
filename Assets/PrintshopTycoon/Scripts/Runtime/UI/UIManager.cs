@@ -25,6 +25,7 @@ namespace PrintshopTycoon
         readonly List<Image> stepPips = new List<Image>();
         RectTransform silkeBubble;
         Text silkeText;
+        Image silkePortrait;
         float silkeHideAt;
 
         // Controls
@@ -169,13 +170,15 @@ namespace PrintshopTycoon
             silkeBubble = bubble.rectTransform;
             silkeBubble.TopStrip(404f, 190f, 24f);
             bubble.gameObject.AddComponent<Button>().onClick.AddListener(() => silkeBubble.gameObject.SetActive(false));
-            var portrait = UIFactory.CircleImage(bubble.transform, "Portrait", Palette.UiPurple);
-            portrait.rectTransform.Place(new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(20f, 0f), new Vector2(140f, 140f));
-            UIFactory.Label(portrait.transform, "Initial", "S", 72, Color.white).rectTransform.Stretch();
-            var name = UIFactory.Label(bubble.transform, "Name", Loc.T("silke.name"), 34, Palette.UiPurple, TextAnchor.UpperLeft);
-            name.rectTransform.Stretch(180, 14, 24, 130);
+            // Official Silke art; it pokes out above the bubble for a friendlier look.
+            silkePortrait = UIFactory.Rect(bubble.transform, "Portrait").gameObject.AddComponent<Image>();
+            silkePortrait.raycastTarget = false;
+            silkePortrait.preserveAspect = true;
+            silkePortrait.rectTransform.Place(new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(6f, 4f), new Vector2(190f, 250f));
+            var name = UIFactory.Label(bubble.transform, "Name", Loc.T("silke.name"), 34, CharacterFactory.BrandRed, TextAnchor.UpperLeft);
+            name.rectTransform.Stretch(210, 14, 24, 130);
             silkeText = UIFactory.Label(bubble.transform, "Text", "", 38, Palette.UiDark, TextAnchor.UpperLeft, FontStyle.Normal);
-            silkeText.rectTransform.Stretch(180, 56, 24, 14);
+            silkeText.rectTransform.Stretch(210, 56, 24, 14);
             silkeBubble.gameObject.SetActive(false);
         }
 
@@ -490,9 +493,13 @@ namespace PrintshopTycoon
             if (rt != null) Destroy(rt.gameObject);
         }
 
-        public void ShowSilke(string text, float seconds = 7f)
+        /// <summary>Silke speaks; pose is one of the CharacterArt Silke images.</summary>
+        public void ShowSilke(string text, string pose = CharacterArt.SilkeWave, float seconds = 7f)
         {
             silkeText.text = text;
+            var sprite = CharacterArt.Get(pose) ?? CharacterArt.Get(CharacterArt.SilkeNeutral);
+            silkePortrait.sprite = sprite;
+            silkePortrait.enabled = sprite != null;
             silkeBubble.gameObject.SetActive(true);
             silkeHideAt = Time.unscaledTime + seconds;
             StartCoroutine(PunchRoutine(silkeBubble));
@@ -595,7 +602,13 @@ namespace PrintshopTycoon
         public void ShowLogoSelect(Action<string> onPicked)
         {
             var s = game.Session;
-            var content = OpenModal(Loc.T("logo.select_title"), 1000f);
+            var content = OpenModal(Loc.T("logo.select_title"), 1260f);
+            var hue = UIFactory.Rect(content, "Hue").gameObject.AddComponent<Image>();
+            hue.sprite = CharacterArt.Get(CharacterArt.HueTransfer);
+            hue.enabled = hue.sprite != null;
+            hue.preserveAspect = true;
+            hue.raycastTarget = false;
+            UIFactory.Height(hue, 230f);
             foreach (var logo in s.Balance.logos)
             {
                 var id = logo.id;
@@ -719,7 +732,7 @@ namespace PrintshopTycoon
         {
             onModalClosed = null;
             DestroyModal();
-            var bg = UIFactory.Panel(canvasRect, "MainMenu", Palette.UiAccent, false, true);
+            var bg = UIFactory.Panel(canvasRect, "MainMenu", CharacterFactory.BrandRed, false, true);
             bg.rectTransform.Stretch();
             modal = bg.rectTransform;
             MainMenuOpen = true;
@@ -735,13 +748,13 @@ namespace PrintshopTycoon
             var sub = UIFactory.Label(inner, "Subtitle", Loc.T("menu.subtitle"), 48, Palette.UiDark);
             sub.rectTransform.TopStrip(540f, 90f, 60f);
 
-            // Placeholder mascot badges (real art comes from the brand owner).
-            var hue = UIFactory.CircleImage(inner, "Hue", MaterialLibrary.Hex("#FFC93C"));
-            hue.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-150f, 170f), new Vector2(240f, 240f));
-            UIFactory.Label(hue.transform, "Name", "Hue", 56, Palette.UiDark).rectTransform.Stretch();
-            var silke = UIFactory.CircleImage(inner, "Silke", Palette.UiPurple);
-            silke.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(150f, 170f), new Vector2(240f, 240f));
-            UIFactory.Label(silke.transform, "Name", "Silke", 56, Color.white).rectTransform.Stretch();
+            // Hue & Silke welcome the player (official art).
+            var duo = UIFactory.Rect(inner, "HueAndSilke").gameObject.AddComponent<Image>();
+            duo.sprite = CharacterArt.Get(CharacterArt.DuoWelcome);
+            duo.enabled = duo.sprite != null;
+            duo.preserveAspect = true;
+            duo.raycastTarget = false;
+            duo.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 80f), new Vector2(560f, 470f));
 
             var buttons = UIFactory.Rect(inner, "Buttons");
             buttons.Place(new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 200f), new Vector2(760f, 560f));
@@ -749,7 +762,7 @@ namespace PrintshopTycoon
             bool hasProgress = game.Session.Progression.CompletedOrders > 0 || game.Session.Orders.Step != OrderStep.Offered;
             UIFactory.Height(UIFactory.Button(buttons, "Play", Loc.T(hasProgress ? "menu.continue" : "menu.play"), Palette.UiGreen, () => CloseModal(), 64), 180f);
             UIFactory.Height(UIFactory.Button(buttons, "Settings", Loc.T("menu.settings"), Palette.UiBlue, () => ShowSettings(() => ShowMainMenu()), 52), 150f);
-            var footer = UIFactory.Label(inner, "Footer", "Prototype v0.1  ·  Hue & Silke: placeholder", 30, new Color(1f, 1f, 1f, 0.8f), TextAnchor.MiddleCenter, FontStyle.Normal);
+            var footer = UIFactory.Label(inner, "Footer", "Prototype v0.1  ·  Tex-Tryk, Nibe", 30, new Color(1f, 1f, 1f, 0.8f), TextAnchor.MiddleCenter, FontStyle.Normal);
             footer.rectTransform.Place(new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(1000f, 60f));
             overlay.SetAsLastSibling();
         }
