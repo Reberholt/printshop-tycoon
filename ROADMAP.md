@@ -45,13 +45,17 @@
 
 > Prompten foreslog sweatshirts ved niveau 7–10. I prototypen er tallene trukket sammen, så man kan nå det hele på én spilletime. Ret i `GameBalance.asset`.
 
+## ✅ Designregel (efter v0.3)
+- Al Tex-Tryk-branding fjernet. Eget mærke (blækdråbe-badge), fiktive maskinmærker PRESSO/INKRA.
+- Varmepressen er nu en rigtig 3D-model fra Blender, udskiftelig med producent-modeller (se `DESIGN_RULES.md`).
+
 ## ⏭️ Næste (v0.4)
 1. **Køre og rette i Unity:** første rigtige kørsel, PlayMode-tests, skærmbilleder og WebGL-build.
 2. **Test på telefon:** mellemklasse-Android, mål FPS, justér tekststørrelser.
-3. **Refleksveste spilbare** (DTF-tryk på refleksveste – passer til refleksvesten.dk).
+3. **Refleksveste spilbare** (DTF-tryk på refleksveste).
 4. **Flere specialordrer:** fodboldklub, firma-arbejdstøj, hastende sportstøj (kun data – systemet findes).
 5. **Offline-indtjening** (gem-filen har allerede tidsstempel).
-6. **Rigtige 3D-modeller af Hue og Silke** ud fra `Art/Reference/`.
+6. **Rigtige 3D-modeller af Hue og Silke** ud fra `Art/Reference/` (uden logoer) – og DTF-printer/pakkebord som Blender-modeller.
 
 ## Senere
 - Hoodies, arbejdstøj, sportstøj, broderi, tasker, patches (produktkataloget er klar til det).

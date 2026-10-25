@@ -64,7 +64,7 @@ namespace PrintshopTycoon
             // Control panel: screen shows the logo colour, LED shows the state.
             s.screen = Shapes.Box(root, "Screen", new Vector3(0.75f, 1.33f, -0.3f), new Vector3(0.32f, 0.2f, 0.04f), MaterialLibrary.Hex("#1B263B")).GetComponent<Renderer>();
             s.statusLed = Shapes.Sphere(root, "Led", new Vector3(0.95f, 1.33f, -0.33f), 0.08f, Palette.Valid).GetComponent<Renderer>();
-            CharacterFactory.BrandT(root, new Vector3(-0.75f, 1.08f, -0.36f), 0.16f);
+            Branding.Mark(root, new Vector3(-0.75f, 1.08f, -0.37f), 0.09f); // fictional brand badge ("INKRA")
 
             // Upgrade visuals: gold turbo stripes on the body, one per level.
             s.turbo = new GameObject[3];

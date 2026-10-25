@@ -153,9 +153,9 @@ namespace PrintshopTycoon
                 Shapes.Box(root, "WindowGlass", new Vector3(x, 2.1f, hd - 0.05f), new Vector3(1.3f, 0.8f, 0.04f), MaterialLibrary.Hex("#9ED8F0"));
             }
 
-            // Tex-Tryk banner between the board and the printer.
-            Shapes.Box(root, "Banner", new Vector3(0.45f, 2.45f, hd - 0.04f), new Vector3(0.9f, 0.7f, 0.03f), CharacterFactory.BrandRed);
-            CharacterFactory.BrandTOnWall(root, new Vector3(0.45f, 2.5f, hd - 0.07f), 0.42f, Color.white);
+            // Shop banner (Printshop Tycoon badge) between the board and the printer.
+            Shapes.Box(root, "Banner", new Vector3(0.45f, 2.45f, hd - 0.04f), new Vector3(0.9f, 0.7f, 0.03f), Branding.Primary);
+            Branding.Mark(root, new Vector3(0.45f, 2.47f, hd - 0.07f), 0.24f, Color.white, Branding.Primary);
 
             // Zone floors: storage (blue), production (orange), shipping (green). Build zone stays teal + dashed.
             Zone(root, "ZoneStorage", new Vector3(-4.3f, 5.6f), new Vector2(3.4f, 3.6f), MaterialLibrary.Hex("#D8E8F5"));
@@ -170,13 +170,13 @@ namespace PrintshopTycoon
             Shapes.Cylinder(root, "RailPole", new Vector3(-5.6f, 0.9f, 2.1f), 0.07f, 1.8f, Palette.Metal);
             var bar = Shapes.Cylinder(root, "RailBar", new Vector3(-5.6f, 1.75f, 0.75f), 0.05f, 2.75f, Palette.Metal);
             bar.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            Color[] hang = { CharacterFactory.BrandRed, Color.white, MaterialLibrary.Hex("#2E86DE"), MaterialLibrary.Hex("#9EA3AB"), MaterialLibrary.Hex("#D7F21F"), CharacterFactory.Beanie, Color.white };
+            Color[] hang = { Branding.Primary, Color.white, MaterialLibrary.Hex("#2E86DE"), MaterialLibrary.Hex("#9EA3AB"), MaterialLibrary.Hex("#D7F21F"), CharacterFactory.Beanie, Color.white };
             for (int i = 0; i < hang.Length; i++)
             {
                 var shirt = Shapes.Box(root, "Hanging", new Vector3(-5.6f, 1.3f, -0.35f + i * 0.36f), new Vector3(0.55f, 0.75f, 0.06f), hang[i]);
                 shirt.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
                 Shapes.Box(shirt.transform, "Sleeves", new Vector3(0f, 0.35f, 0f), new Vector3(1.4f, 0.25f, 1f), hang[i]);
-                Shapes.Box(shirt.transform, "Print", new Vector3(0f, 0.1f, -0.6f), new Vector3(0.35f, 0.25f, 0.4f), i % 2 == 0 ? Palette.UiCoin : CharacterFactory.BrandRed);
+                Shapes.Box(shirt.transform, "Print", new Vector3(0f, 0.1f, -0.6f), new Vector3(0.35f, 0.25f, 0.4f), i % 2 == 0 ? Palette.UiCoin : Branding.Secondary);
             }
 
             // Film rolls rack next to the printer (east wall).
@@ -194,13 +194,13 @@ namespace PrintshopTycoon
                 Shapes.Box(root, "Bundle", new Vector3(-5.2f + (i % 2 - 0.5f) * 0.46f, 0.32f + (i / 2) * 0.36f, 3.4f), new Vector3(0.42f, 0.34f, 0.8f), i % 3 == 0 ? MaterialLibrary.Hex("#F4F6F8") : Palette.Cardboard);
             Shapes.Box(root, "Boxes", new Vector3(-5.35f, 0.3f, 4.6f), new Vector3(0.6f, 0.6f, 0.6f), Palette.Cardboard, true);
 
-            // Entrance: mannequin with a Tex-Tryk tee, bench, plants.
+            // Entrance: mannequin with the shop's own tee, bench, plants.
             var dummy = new GameObject("Mannequin").transform;
             dummy.SetParent(root, false);
             dummy.localPosition = new Vector3(-2.7f, 0f, -7.3f);
             Shapes.Cylinder(dummy, "Stand", new Vector3(0f, 0.5f, 0f), 0.08f, 1.0f, Palette.MetalDark);
-            Shapes.Capsule(dummy, "Torso", new Vector3(0f, 1.3f, 0f), 0.55f, 0.75f, CharacterFactory.BrandRed);
-            CharacterFactory.BrandTOnWall(dummy, new Vector3(0f, 1.38f, -0.29f), 0.2f, Color.white);
+            Shapes.Capsule(dummy, "Torso", new Vector3(0f, 1.3f, 0f), 0.55f, 0.75f, Branding.Primary);
+            Branding.Mark(dummy, new Vector3(0f, 1.38f, -0.29f), 0.12f, Color.white, Branding.Primary);
             Shapes.Box(root, "Bench", new Vector3(-4.3f, 0.25f, -7.4f), new Vector3(1.4f, 0.5f, 0.5f), Palette.Wood, true);
             foreach (var p in new[] { new Vector3(-5.5f, 0f, -7.4f), new Vector3(5.4f, 0f, -7.3f) })
             {

@@ -75,7 +75,7 @@ namespace PrintshopTycoon
             var glow = Shapes.Box(pivot, "HeatPlate", new Vector3(0f, -0.18f, -0.48f), new Vector3(0.92f, 0.03f, 0.78f), MaterialLibrary.Hex("#5E6B7A"));
             var handle = Shapes.Cylinder(pivot, "Handle", new Vector3(0f, 0.02f, -0.98f), 0.1f, 0.7f, Palette.UiDark);
             handle.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-            CharacterFactory.BrandT(pivot, new Vector3(0f, 0.025f, -0.48f), 0.22f);
+            Branding.Mark(pivot, new Vector3(0f, 0.03f, -0.48f), 0.1f);
 
             // Temperature display + status lamp on the cabinet front.
             Shapes.Box(m, "Display", new Vector3(-0.32f, 0.72f, -0.56f), new Vector3(0.28f, 0.14f, 0.03f), MaterialLibrary.Hex("#1B263B"));

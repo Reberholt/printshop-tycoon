@@ -193,7 +193,7 @@ namespace PrintshopTycoon
             float h = accept != null ? 420f : 280f;
             var row = Row(content, h, special ? new Color(1f, 0.93f, 0.92f) : new Color(0.96f, 0.95f, 0.92f));
 
-            var head = UIFactory.Label(row, "Head", special ? "♦ " + Loc.T("special.title") : Loc.T("order.regular"), 30, special ? CharacterFactory.BrandRed : Palette.UiGrey, TextAnchor.UpperLeft);
+            var head = UIFactory.Label(row, "Head", special ? "♦ " + Loc.T("special.title") : Loc.T("order.regular"), 30, special ? Branding.Primary : Palette.UiGrey, TextAnchor.UpperLeft);
             head.rectTransform.TopStrip(14f, 40f, 24f);
             var customer = UIFactory.Label(row, "Customer", Loc.T(order.CustomerKey), 46, Palette.UiDark, TextAnchor.UpperLeft);
             customer.rectTransform.TopStrip(54f, 60f, 24f);
@@ -216,7 +216,7 @@ namespace PrintshopTycoon
 
             if (accept != null)
             {
-                var b = UIFactory.Button(row, "Accept", special ? Loc.T("special.accept") : Loc.T("order.accept"), special ? CharacterFactory.BrandRed : Palette.UiGreen, accept, 44);
+                var b = UIFactory.Button(row, "Accept", special ? Loc.T("special.accept") : Loc.T("order.accept"), special ? Branding.Primary : Palette.UiGreen, accept, 44);
                 var rt = (RectTransform)b.transform;
                 rt.anchorMin = new Vector2(0f, 0f); rt.anchorMax = new Vector2(1f, 0f);
                 rt.pivot = new Vector2(0.5f, 0f);
@@ -537,7 +537,7 @@ namespace PrintshopTycoon
         {
             onModalClosed = null;
             DestroyModal();
-            var bg = UIFactory.Panel(canvasRect, "MainMenu", CharacterFactory.BrandRed, false, true);
+            var bg = UIFactory.Panel(canvasRect, "MainMenu", Branding.Primary, false, true);
             bg.rectTransform.Stretch();
             modal = bg.rectTransform;
             MainMenuOpen = true;
@@ -568,7 +568,7 @@ namespace PrintshopTycoon
             bool hasProgress = game.Session.Progression.CompletedOrders > 0 || game.Session.Orders.Step != OrderStep.Offered;
             UIFactory.Height(UIFactory.Button(buttons, "Play", Loc.T(hasProgress ? "menu.continue" : "menu.play"), Palette.UiGreen, () => CloseModal(), 64), 180f);
             UIFactory.Height(UIFactory.Button(buttons, "Settings", Loc.T("menu.settings"), Palette.UiDark, () => ShowSettings(() => ShowMainMenu()), 50), 140f);
-            var footer = UIFactory.Label(inner, "Footer", Loc.T("menu.version") + "  ·  Tex-Tryk, Nibe", 30, new Color(1f, 1f, 1f, 0.85f), TextAnchor.MiddleCenter, FontStyle.Normal);
+            var footer = UIFactory.Label(inner, "Footer", Loc.T("menu.version"), 30, new Color(1f, 1f, 1f, 0.85f), TextAnchor.MiddleCenter, FontStyle.Normal);
             footer.rectTransform.Place(new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(1000f, 60f));
             overlay.SetAsLastSibling();
         }

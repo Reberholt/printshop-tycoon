@@ -171,7 +171,7 @@ namespace PrintshopTycoon
             orderSub = UIFactory.Label(card.transform, "Sub", "", 30, new Color(0.35f, 0.36f, 0.42f), TextAnchor.MiddleLeft, FontStyle.Normal);
             orderSub.rectTransform.Stretch(126, 62, 150, 22);
 
-            orderBadgeBg = UIFactory.Panel(card.transform, "Badge", CharacterFactory.BrandRed, true, false);
+            orderBadgeBg = UIFactory.Panel(card.transform, "Badge", Branding.Primary, true, false);
             orderBadgeBg.rectTransform.Place(new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 6f), new Vector2(124f, 70f));
             orderBadge = UIFactory.Label(orderBadgeBg.transform, "Text", "", 36, Color.white);
             orderBadge.rectTransform.Stretch(4, 4, 4, 4);
@@ -259,7 +259,7 @@ namespace PrintshopTycoon
             UIFactory.Button(bar.transform, "Upgrade", Loc.T("hud.upgrades"), Palette.UiAccent, () => ShowUpgrades(), 34);
             UIFactory.Button(bar.transform, "Staff", Loc.T("hud.staff"), Palette.UiPurple, () => ShowStaff(), 34);
             UIFactory.Button(bar.transform, "Orders", Loc.T("hud.orders"), Palette.UiBlue, () => ShowOrderPanel(), 34);
-            UIFactory.Button(bar.transform, "Back", Loc.T("hud.back_to_hue"), CharacterFactory.BrandRed, () => game.SetMode(CameraMode.Character), 34);
+            UIFactory.Button(bar.transform, "Back", Loc.T("hud.back_to_hue"), Branding.Primary, () => game.SetMode(CameraMode.Character), 34);
 
             var sel = UIFactory.Panel(root, "Selection", new Color(1f, 0.99f, 0.97f, 0.96f));
             sel.rectTransform.anchorMin = new Vector2(0f, 0f); sel.rectTransform.anchorMax = new Vector2(1f, 0f);
@@ -360,14 +360,14 @@ namespace PrintshopTycoon
             {
                 orderBadgeBg.gameObject.SetActive(true);
                 bool late = o.SpecialExpired;
-                orderBadgeBg.color = late ? Palette.UiGrey : (o.SpecialRemaining < 30f && Mathf.Repeat(Time.time * 2f, 1f) > 0.5f ? Palette.UiCoin : CharacterFactory.BrandRed);
+                orderBadgeBg.color = late ? Palette.UiGrey : (o.SpecialRemaining < 30f && Mathf.Repeat(Time.time * 2f, 1f) > 0.5f ? Palette.UiCoin : Branding.Primary);
                 int secondsLeft = late ? 0 : Mathf.CeilToInt(o.SpecialRemaining);
                 if (secondsLeft != shownBadgeSeconds) { shownBadgeSeconds = secondsLeft; orderBadge.text = FormatTime(secondsLeft); }
             }
             else if (o.OfferedSpecial != null)
             {
                 orderBadgeBg.gameObject.SetActive(true);
-                orderBadgeBg.color = CharacterFactory.BrandRed;
+                orderBadgeBg.color = Branding.Primary;
                 orderBadge.text = "♦";
                 shownBadgeSeconds = -1;
             }

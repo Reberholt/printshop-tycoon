@@ -62,12 +62,13 @@ Assets/PrintshopTycoon/
 ├── Resources/         Hue/Silke-billeder (UI)
 ├── Editor/            opsætning, builds, skærmbilleder, video
 └── Tests/             EditMode (regler) + PlayMode (hele forløbet)
-Art/Reference/         officielle Hue & Silke-referencer
+Art/Reference/         Hue & Silke-referencer (originaler, med gamle logoer – bruges ikke direkte)
+DESIGN_RULES.md        ingen Tex-Tryk-branding, fiktive maskinmærker, udskiftelige modeller
 Tools/                 tests og compile-check uden Unity
 ROADMAP.md             plan og oplåsning pr. niveau
 ```
 - Alle tal (priser, tider, oplåsning) ligger i `Resources/PrintshopTycoon/GameBalance.asset`.
-- Hue og Silke er enkle 3D-figurer i jeres stil. Billederne i menuer og guide er de officielle referencer.
+- Hue og Silke er enkle 3D-figurer. Billederne i menuer og guide er referencerne – renset for Tex-Tryk-logoer (se `DESIGN_RULES.md`).
 
 ## Kendte begrænsninger
 - Ikke kørt i Unity – forvent små rettelser første gang (layout, kameravinkel, tekststørrelser).
@@ -79,4 +80,4 @@ ROADMAP.md             plan og oplåsning pr. niveau
 Se `ROADMAP.md` for næste skridt.
 
 ---
-**Ejer:** Thomas Reberholt · **Version:** v0.3 · **Sprog:** Dansk (engelsk forberedt)
+**Ejer:** Thomas Reberholt · **Version:** v0.3 · **Designregler:** `DESIGN_RULES.md` · **Sprog:** Dansk (engelsk forberedt)

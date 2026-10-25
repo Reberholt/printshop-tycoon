@@ -29,7 +29,7 @@ namespace PrintshopTycoon
             silkePortrait.raycastTarget = false;
             silkePortrait.preserveAspect = true;
             silkePortrait.rectTransform.Place(new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(6f, 4f), new Vector2(180f, 236f));
-            var name = UIFactory.Label(bubble.transform, "Name", Loc.T("silke.name"), 32, CharacterFactory.BrandRed, TextAnchor.UpperLeft);
+            var name = UIFactory.Label(bubble.transform, "Name", Loc.T("silke.name"), 32, Branding.Primary, TextAnchor.UpperLeft);
             name.rectTransform.Stretch(200, 12, 24, 126);
             silkeText = UIFactory.Label(bubble.transform, "Text", "", 36, Palette.UiDark, TextAnchor.UpperLeft, FontStyle.Normal);
             silkeText.rectTransform.Stretch(200, 52, 24, 12);

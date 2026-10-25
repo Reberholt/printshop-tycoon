@@ -4,7 +4,7 @@ namespace PrintshopTycoon
 {
     /// <summary>
     /// Low-poly stand-ins for Hue and Silke, styled after the official reference art
-    /// (Art/Reference): black beanie with red T, grey hoodie, black Tex-Tryk overalls,
+    /// (Art/Reference): black beanie, grey hoodie, black work overalls with the Printshop badge,
     /// chunky black boots with beige soles, big round nose, big chibi head.
     /// Built as a tiny rig (Hips/LegL/LegR/ArmL/ArmR/Head pivots) so CharacterAnimator can
     /// walk, idle and work. Real 3D models can replace "Visual" later without touching gameplay.
@@ -14,7 +14,8 @@ namespace PrintshopTycoon
         public static readonly Color Skin = MaterialLibrary.Hex("#F2C29B");
         public static readonly Color Nose = MaterialLibrary.Hex("#EFA27C");
         public static readonly Color Beanie = MaterialLibrary.Hex("#1F1F22");
-        public static readonly Color BrandRed = MaterialLibrary.Hex("#E3191B");
+        /// <summary>Kept for the red pen/tool details only - not a brand colour.</summary>
+        public static readonly Color ToolRed = MaterialLibrary.Hex("#E3191B");
         public static readonly Color Hoodie = MaterialLibrary.Hex("#A3A3A6");
         public static readonly Color Overalls = MaterialLibrary.Hex("#242427");
         public static readonly Color Boot = MaterialLibrary.Hex("#1B1B1D");
@@ -76,16 +77,16 @@ namespace PrintshopTycoon
                 Shapes.Sphere(leg, "Boot", new Vector3(0f, -0.33f, -0.06f), 0.3f, Boot).transform.localScale = new Vector3(0.28f, 0.2f, 0.38f);
             }
 
-            // Torso: hoodie, overalls, bib with the Tex-Tryk T, tool pocket with red pen.
+            // Torso: hoodie, overalls, bib with the Printshop ink-drop badge, tool pocket with red pen.
             var hips = Pivot(v, "Hips", new Vector3(0f, 0.46f, 0f));
             Shapes.Capsule(hips, "Body", new Vector3(0f, 0.32f, 0f), 0.62f, 0.72f, s.hoodie);
             Shapes.Box(hips, "Overalls", new Vector3(0f, 0.14f, 0f), new Vector3(0.58f, 0.36f, 0.5f), Overalls);
             Shapes.Box(hips, "Bib", new Vector3(0f, 0.42f, -0.24f), new Vector3(0.36f, 0.3f, 0.06f), Overalls);
             foreach (var x in new[] { -0.15f, 0.15f })
                 Shapes.Box(hips, "Strap", new Vector3(x, 0.55f, -0.2f), new Vector3(0.06f, 0.2f, 0.06f), Overalls);
-            BrandT(hips, new Vector3(0f, 0.45f, -0.275f), 0.13f);
+            Branding.Mark(hips, new Vector3(0f, 0.45f, -0.28f), 0.09f);
             Shapes.Box(hips, "Pocket", new Vector3(-0.27f, 0.08f, -0.12f), new Vector3(0.1f, 0.16f, 0.2f), Overalls);
-            Shapes.Box(hips, "Pen", new Vector3(-0.27f, 0.19f, -0.18f), new Vector3(0.035f, 0.1f, 0.035f), BrandRed);
+            Shapes.Box(hips, "Pen", new Vector3(-0.27f, 0.19f, -0.18f), new Vector3(0.035f, 0.1f, 0.035f), ToolRed);
             Shapes.Sphere(hips, "Hood", new Vector3(0f, 0.66f, 0.1f), 0.5f, s.hoodie).transform.localScale = new Vector3(0.55f, 0.25f, 0.45f);
 
             // Arms (pivot at the shoulder) in the hoodie with round hands.
@@ -127,7 +128,7 @@ namespace PrintshopTycoon
             rim.transform.localScale = new Vector3(0.72f, 0.085f, 0.7f);
             if (!s.ponytail)
                 Shapes.Sphere(head, "BeanieTop", new Vector3(-0.05f, 0.78f, 0.06f), 0.36f, Beanie).transform.localScale = new Vector3(0.42f, 0.3f, 0.4f);
-            BrandT(head, new Vector3(0f, 0.53f, -0.355f), 0.12f);
+            // Plain beanie (no logo) - the beanie itself is the characters' trademark look.
 
             // Built facing -z; rotate so the face points along the root's forward.
             v.localRotation = Quaternion.Euler(0f, 180f, 0f);
@@ -135,14 +136,5 @@ namespace PrintshopTycoon
             return root;
         }
 
-        /// <summary>The red Tex-Tryk "T" made from two boxes.</summary>
-        public static void BrandT(Transform parent, Vector3 center, float size) => BrandTOnWall(parent, center, size, BrandRed);
-
-        /// <summary>The Tex-Tryk "T" in any colour (white on red banners).</summary>
-        public static void BrandTOnWall(Transform parent, Vector3 center, float size, Color color)
-        {
-            Shapes.Box(parent, "T_Top", center + new Vector3(0f, size * 0.4f, 0f), new Vector3(size, size * 0.22f, 0.02f), color);
-            Shapes.Box(parent, "T_Stem", center + new Vector3(0f, -size * 0.08f, 0f), new Vector3(size * 0.26f, size * 0.8f, 0.02f), color);
-        }
     }
 }

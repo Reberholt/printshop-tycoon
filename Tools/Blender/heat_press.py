@@ -1,5 +1,6 @@
 """
 Printshop Tycoon - stylised heat press (rounded, toy-like 3D look) built by script.
+Fictional brand "PRESSO" (no real-world branding in the game).
 
   Export the Unity model:
     blender -b -P Tools/Blender/heat_press.py -- export
@@ -178,8 +179,10 @@ def build_press():
     for i in range(3):
         box("ShelfTee", (0.36, 0.32, 0.05), (-0.32 + i * 0.32, 0.05, 0.27), WHITE, 0.015, root)
 
-    # Base: chunky red body with a warning sticker (no brand lettering).
+    # Base: chunky red body with the fictional brand name and a warning sticker.
+    # (Design rule: no real-world branding; real manufacturer models may replace this later.)
     box("Base", (1.0, 0.86, 0.16), (0, 0.04, 0.88), RED, 0.05, root)
+    text("BaseText", "PRESSO", 0.085, (0.0, 0.475, 0.875), WHITE, root)
     triangle_sign("BaseWarning", (-0.4, 0.474, 0.88), 0.035, root)
     for sx in (-1, 1):
         box("Foot", (0.12, 0.12, 0.03), (sx * 0.4, 0.38, 0.795), RUBBER, 0.01, root)

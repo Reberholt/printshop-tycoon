@@ -54,7 +54,7 @@ namespace PrintshopTycoon
             s.flapR = Pivot(s.box, "FlapR", new Vector3(0.31f, 0.36f, 0f));
             Shapes.Box(s.flapR, "Flap", new Vector3(-0.155f, 0f, 0f), new Vector3(0.31f, 0.02f, 0.5f), MaterialLibrary.Hex("#C98F55"));
             s.tape = Shapes.Box(s.box, "Tape", new Vector3(0f, 0.375f, 0f), new Vector3(0.08f, 0.01f, 0.52f), MaterialLibrary.Hex("#C9A227"));
-            CharacterFactory.BrandT(s.box, new Vector3(0f, 0.2f, -0.26f), 0.16f);
+            Branding.Mark(s.box, new Vector3(0f, 0.2f, -0.26f), 0.08f, Branding.Secondary, Color.white);
             s.contents = new GameObject("Contents").transform;
             s.contents.SetParent(s.box, false);
             s.ResetBox();

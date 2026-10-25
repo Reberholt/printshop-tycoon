@@ -23,13 +23,13 @@ namespace PrintshopTycoon
             Shapes.Box(root, "NoteB", new Vector3(-0.62f, 1.62f, -0.1f), new Vector3(0.34f, 0.38f, 0.02f), MaterialLibrary.Hex("#BDE0FE"));
             var note = Shapes.Box(root, "NewOrder", new Vector3(0.0f, 1.95f, -0.12f), new Vector3(0.5f, 0.6f, 0.02f), MaterialLibrary.Hex("#FFADAD"));
             Shapes.Sphere(note.transform, "Pin", new Vector3(0f, 0.4f, -1f), 0.25f, Palette.PressRed);
-            var special = Shapes.Box(root, "SpecialOrder", new Vector3(0.62f, 1.95f, -0.12f), new Vector3(0.42f, 0.55f, 0.02f), CharacterFactory.BrandRed);
+            var special = Shapes.Box(root, "SpecialOrder", new Vector3(0.62f, 1.95f, -0.12f), new Vector3(0.42f, 0.55f, 0.02f), Branding.Primary);
             Shapes.Box(special.transform, "Star", new Vector3(0f, 0.15f, -1f), new Vector3(0.45f, 0.35f, 0.5f), Palette.UiCoin).transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             Shapes.Box(special.transform, "Line", new Vector3(0f, -0.25f, -1f), new Vector3(0.7f, 0.06f, 0.5f), Color.white);
             // Counter in front so the board reads as a "station" from above, with a phone and a mug.
             Shapes.Box(root, "Desk", new Vector3(0f, 0.45f, -0.05f), new Vector3(f.width, 0.9f, 0.35f), Palette.Wood);
             Shapes.Box(root, "Phone", new Vector3(-0.6f, 0.93f, -0.08f), new Vector3(0.22f, 0.06f, 0.16f), Palette.UiDark);
-            Shapes.Cylinder(root, "Mug", new Vector3(0.65f, 0.97f, -0.08f), 0.11f, 0.14f, CharacterFactory.BrandRed);
+            Shapes.Cylinder(root, "Mug", new Vector3(0.65f, 0.97f, -0.08f), 0.11f, 0.14f, Branding.Secondary);
 
             var station = root.gameObject.AddComponent<OrderBoardStation>();
             station.highlightNote = note;

@@ -4,24 +4,26 @@ using UnityEngine;
 namespace PrintshopTycoon
 {
     /// <summary>
-    /// Official Hue &amp; Silke artwork (Resources/PrintshopTycoon/Characters, transparent PNGs cut
-    /// from the reference art) as UI sprites. Missing files return null so the UI falls back.
+    /// Hue &amp; Silke artwork (Resources/PrintshopTycoon/Characters): transparent cut-outs of the
+    /// reference art with all Tex-Tryk logos removed (design rule: no real-world branding).
+    /// Poses whose motif was the old logo are not shipped; their constants map to clean poses.
+    /// Missing files return null so the UI falls back.
     /// </summary>
     public static class CharacterArt
     {
         public const string HueNeutral = "hue_neutral";
         public const string HueWave = "hue_wave";
         public const string HuePoint = "hue_point";
-        public const string HueTransfer = "hue_transfer";
+        public const string HueTransfer = "hue_point";       // old transfer pose carried the logo
         public const string HueClock = "hue_clock";
         public const string HueHeadset = "hue_headset";
         public const string SilkeNeutral = "silke_neutral";
         public const string SilkeWave = "silke_wave";
         public const string SilkeClipboard = "silke_clipboard";
         public const string SilkeQuestion = "silke_question";
-        public const string SilkeMagnifier = "silke_magnifier";
-        public const string SilkeMeasure = "silke_measure";
-        public const string SilkeMonitor = "silke_monitor";
+        public const string SilkeMagnifier = "silke_question";
+        public const string SilkeMeasure = "silke_clipboard";
+        public const string SilkeMonitor = "silke_wave";
         public const string DuoWelcome = "duo_welcome";
         public const string DuoDesk = "duo_desk";
 
