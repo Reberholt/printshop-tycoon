@@ -11,6 +11,23 @@ namespace PrintshopTycoon
     {
         RectTransform modal;
         Action onModalClosed;
+        ScrollRect currentScroll;
+
+        /// <summary>Rebuilds a panel (after a purchase) without jumping back to the top of the list.</summary>
+        void Refresh(Action rebuild)
+        {
+            float position = currentScroll != null ? currentScroll.verticalNormalizedPosition : 1f;
+            rebuild();
+            StartCoroutine(RestoreScroll(currentScroll, position));
+        }
+
+        static System.Collections.IEnumerator RestoreScroll(ScrollRect scroll, float position)
+        {
+            yield return null; // let the layout groups size the new content first
+            if (scroll == null) yield break;
+            Canvas.ForceUpdateCanvases();
+            scroll.verticalNormalizedPosition = position;
+        }
         HeatPressMinigameView minigame;
 
         public bool ModalOpen => modal != null;
@@ -65,6 +82,8 @@ namespace PrintshopTycoon
             scroll.movementType = ScrollRect.MovementType.Elastic;
             scroll.scrollSensitivity = 30f;
 
+            currentScroll = scroll;
+            silkeBubble.gameObject.SetActive(false); // toasts stay above panels, Silke doesn't cover them
             overlay.SetAsLastSibling();
             game.Audio.Play(Sfx.Click, 0.6f);
             game.OnModalChanged(true);
@@ -86,9 +105,10 @@ namespace PrintshopTycoon
             DestroyModal();
             var cb = onModalClosed;
             onModalClosed = null;
+            cb?.Invoke();
+            if (modal != null) return; // the callback opened the next panel (e.g. back to the main menu)
             game.SetPaused(false);
             game.OnModalChanged(false);
-            cb?.Invoke();
         }
 
         Text Paragraph(RectTransform content, string text, int size = 38, Color? color = null, float height = 64f, TextAnchor anchor = TextAnchor.MiddleCenter, FontStyle style = FontStyle.Normal)
@@ -367,7 +387,7 @@ namespace PrintshopTycoon
                 color = Palette.UiAccent;
             }
             var id = def.id;
-            var b = UIFactory.Button(row, "Buy", label, color, () => { game.BuyUpgrade(id); ShowUpgrades(); }, 36);
+            var b = UIFactory.Button(row, "Buy", label, color, () => { game.BuyUpgrade(id); Refresh(ShowUpgrades); }, 36);
             ((RectTransform)b.transform).Place(new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-20f, 0f), new Vector2(290f, 130f));
             b.interactable = canBuy;
         }
@@ -433,7 +453,7 @@ namespace PrintshopTycoon
                 string label = amount > 0
                     ? Loc.T("act.restock_product", amount, name, cost) + "   (" + s.Inventory.Stock(p.id) + ")"
                     : Loc.T("act.storage_full");
-                var b = ListButton(content, label, Palette.UiBlue, () => { game.RestockProduct(id); ShowShop(); }, 120f, 38);
+                var b = ListButton(content, label, Palette.UiBlue, () => { game.RestockProduct(id); Refresh(ShowShop); }, 120f, 38);
                 b.interactable = amount > 0 && s.Wallet.CanAfford(cost);
             }
         }
@@ -446,7 +466,7 @@ namespace PrintshopTycoon
             var hire = ListButton(content, Loc.T("staff.hire", s.Balance.workerHireCost), Palette.UiPurple, () =>
             {
                 game.HireWorker();
-                ShowStaff();
+                Refresh(ShowStaff);
             }, 140f);
             hire.interactable = s.CanHireWorker && s.Wallet.CanAfford(s.Balance.workerHireCost);
             Paragraph(content, Loc.T("hud.autojobs", s.AutoJobs.Queued + s.AutoJobs.InProgress), 32, Palette.UiPurple, 54f);
@@ -464,7 +484,7 @@ namespace PrintshopTycoon
                     var next = s.NextFreePressFor(worker);
                     if (next != null && s.AssignWorker(worker, next) == ActionResult.Ok) game.Audio.Play(Sfx.Click);
                     else { game.Audio.Play(Sfx.Error); Toast(Loc.T("toast.station_busy"), true); }
-                    ShowStaff();
+                    Refresh(ShowStaff);
                 }, 104f, 38);
             }
         }
@@ -523,6 +543,7 @@ namespace PrintshopTycoon
             MainMenuOpen = true;
             game.SetPaused(true);
             game.OnModalChanged(true);
+            silkeBubble.gameObject.SetActive(false);
 
             var inner = UIFactory.Rect(bg.transform, "Safe").Stretch();
             inner.gameObject.AddComponent<SafeArea>().Apply();

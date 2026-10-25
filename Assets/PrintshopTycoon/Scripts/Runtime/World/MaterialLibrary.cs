@@ -48,9 +48,16 @@ namespace PrintshopTycoon
             return baseMaterial;
         }
 
+        static readonly Dictionary<string, Color> parsed = new Dictionary<string, Color>();
+
+        /// <summary>Parses "#RRGGBB" once and caches it (called from per-frame code).</summary>
         public static Color Hex(string hex)
         {
-            return ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.magenta;
+            if (hex == null) return Color.magenta;
+            if (parsed.TryGetValue(hex, out var cached)) return cached;
+            var c = ColorUtility.TryParseHtmlString(hex, out var p) ? p : Color.magenta;
+            parsed[hex] = c;
+            return c;
         }
     }
 

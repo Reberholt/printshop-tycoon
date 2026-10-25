@@ -141,7 +141,8 @@ namespace PrintshopTycoon
             UpdatePlayerCarry();
             Player.Working = UI.MinigameOpen;
             UpdateSpecialOrder();
-            if (!UI.ModalOpen && pendingLevelUps.Count > 0) ShowNextLevelUp();
+            // Level-ups wait for the parcel animation and the payout screen that follows it.
+            if (!UI.ModalOpen && !Packing.Animating && pendingLevelUps.Count > 0) ShowNextLevelUp();
 
             NextTarget = ComputeNextTarget();
             bool showMarker = Cameras.Mode == CameraMode.Character && !UI.ModalOpen && NextTarget != null;

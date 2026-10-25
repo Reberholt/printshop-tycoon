@@ -24,7 +24,8 @@ namespace PrintshopTycoon
         Color shownLampColor = Color.clear;
         static readonly Color PlateGrey = MaterialLibrary.Hex("#5E6B7A");
         string shownGarmentKey;
-        float lidAngle = -32f;
+        const float LidOpenAngle = 32f;   // positive X lifts the front of the lid
+        float lidAngle = LidOpenAngle;
         float steamTimer;
         bool forcedClosed;
         bool wasDone;
@@ -102,7 +103,7 @@ namespace PrintshopTycoon
                 station.gaugeNeedle = needle;
                 pivot.localRotation = Quaternion.Euler(station.lidAngle, 0f, 0f);
             }
-            else pivot.localRotation = Quaternion.Euler(-32f, 0f, 0f);
+            else pivot.localRotation = Quaternion.Euler(LidOpenAngle, 0f, 0f);
         }
 
         protected override void OnSetup()
@@ -152,7 +153,7 @@ namespace PrintshopTycoon
             bool hot = PlayerPressing || workerPressing;
             bool closed = forcedClosed || hot;
 
-            float target = closed ? 0f : -32f;
+            float target = closed ? 0f : LidOpenAngle;
             lidAngle = Mathf.MoveTowards(lidAngle, target, 160f * Time.deltaTime);
             lidPivot.localRotation = Quaternion.Euler(lidAngle, 0f, 0f);
 

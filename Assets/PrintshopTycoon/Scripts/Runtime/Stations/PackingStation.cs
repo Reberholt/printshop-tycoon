@@ -19,6 +19,8 @@ namespace PrintshopTycoon
         bool animating;
 
         public override string DisplayName => Loc.T("station.packing");
+        /// <summary>True while the parcel animation runs (the payout screen follows it).</summary>
+        public bool Animating => animating;
 
         public static PackingStation Build(Transform parent, Footprint f)
         {
@@ -42,13 +44,17 @@ namespace PrintshopTycoon
             s.box = new GameObject("Box").transform;
             s.box.SetParent(root, false);
             s.box.localPosition = new Vector3(0.05f, 0.96f, 0.15f);
-            Shapes.Box(s.box, "Bottom", new Vector3(0f, 0.18f, 0f), new Vector3(0.62f, 0.36f, 0.5f), Palette.Cardboard);
+            Shapes.Box(s.box, "Floor", new Vector3(0f, 0.01f, 0f), new Vector3(0.62f, 0.02f, 0.5f), Palette.Cardboard);
+            Shapes.Box(s.box, "WallL", new Vector3(-0.3f, 0.18f, 0f), new Vector3(0.02f, 0.36f, 0.5f), Palette.Cardboard);
+            Shapes.Box(s.box, "WallR", new Vector3(0.3f, 0.18f, 0f), new Vector3(0.02f, 0.36f, 0.5f), Palette.Cardboard);
+            Shapes.Box(s.box, "WallF", new Vector3(0f, 0.18f, -0.24f), new Vector3(0.62f, 0.36f, 0.02f), Palette.Cardboard);
+            Shapes.Box(s.box, "WallB", new Vector3(0f, 0.18f, 0.24f), new Vector3(0.62f, 0.36f, 0.02f), Palette.Cardboard);
             s.flapL = Pivot(s.box, "FlapL", new Vector3(-0.31f, 0.36f, 0f));
             Shapes.Box(s.flapL, "Flap", new Vector3(0.155f, 0f, 0f), new Vector3(0.31f, 0.02f, 0.5f), MaterialLibrary.Hex("#C98F55"));
             s.flapR = Pivot(s.box, "FlapR", new Vector3(0.31f, 0.36f, 0f));
             Shapes.Box(s.flapR, "Flap", new Vector3(-0.155f, 0f, 0f), new Vector3(0.31f, 0.02f, 0.5f), MaterialLibrary.Hex("#C98F55"));
             s.tape = Shapes.Box(s.box, "Tape", new Vector3(0f, 0.375f, 0f), new Vector3(0.08f, 0.01f, 0.52f), MaterialLibrary.Hex("#C9A227"));
-            CharacterFactory.BrandT(s.box, new Vector3(0f, 0.2f, -0.255f), 0.16f);
+            CharacterFactory.BrandT(s.box, new Vector3(0f, 0.2f, -0.26f), 0.16f);
             s.contents = new GameObject("Contents").transform;
             s.contents.SetParent(s.box, false);
             s.ResetBox();
@@ -124,7 +130,7 @@ namespace PrintshopTycoon
             {
                 float k = t / 0.35f;
                 for (int i = 0; i < items.Count; i++)
-                    items[i].localPosition = new Vector3(0f, Mathf.Lerp(0.9f + i * 0.15f, 0.08f + i * look.Thickness, k * k), 0f);
+                    items[i].localPosition = new Vector3(0f, Mathf.Lerp(0.9f + i * 0.15f, 0.05f + i * (look.Thickness + 0.01f), k * k), 0f);
                 yield return null;
             }
 

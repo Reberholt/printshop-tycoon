@@ -49,7 +49,10 @@ namespace PrintshopTycoon
         FactoryTouchSurface touchSurface;
 
         int shownCoins = -1, shownLevel = -1;
+        int shownOrderKey = int.MinValue, shownBadgeSeconds = -1;
+        string shownOrderLanguage;
         bool resetArmed;
+        int shownStockKey = -1;
 
         public VirtualJoystick Joystick => joystick;
         public FactoryTouchSurface TouchSurface => touchSurface;
@@ -307,7 +310,8 @@ namespace PrintshopTycoon
                 levelText.text = Loc.T("hud.level", shownLevel);
             }
             levelFill.rectTransform.anchorMax = new Vector2(s.Progression.LevelProgress, 1f);
-            stockText.text = s.Inventory.Total + "/" + s.Inventory.Capacity;
+            int stockKey = s.Inventory.Total * 10000 + s.Inventory.Capacity;
+            if (stockKey != shownStockKey) { shownStockKey = stockKey; stockText.text = s.Inventory.Total + "/" + s.Inventory.Capacity; }
             stockText.color = s.Inventory.FreeSpace == 0 ? Palette.UiCoin : Color.white;
 
             UpdateOrderCard(s);
@@ -337,9 +341,17 @@ namespace PrintshopTycoon
             orderIcon.color = logo != null ? MaterialLibrary.Hex(logo.colorHex) : Color.white;
             orderIconInner.color = product != null ? MaterialLibrary.Hex(product.colorHex) : Color.white;
 
-            orderTitle.text = "► " + StepText(o, product);
-            string productName = product != null ? Loc.T(product.nameKey) : "";
-            orderSub.text = Loc.T(order.CustomerKey) + " · " + order.Quantity + " " + productName + " · " + Loc.T("order.net", o.CalculatePayout().Net);
+            // Rebuild strings only when something visible changed (no per-frame garbage on mobile).
+            int percent = Mathf.RoundToInt((o.IsPrinting ? o.PrintProgress : (o.Step == OrderStep.CollectFinished ? o.PressProgress : 0f)) * 100f);
+            int key = (((order.Sequence * 7 + o.StepIndex) * 101 + percent) * 3 + (o.TransfersReady ? 1 : 0) + (o.PressDone ? 2 : 0)) * 31 + (int)o.Quality + (order.IsSpecial ? 17 : 0) + (o.SpecialExpired ? 5 : 0);
+            if (key != shownOrderKey || Loc.Language != shownOrderLanguage)
+            {
+                shownOrderKey = key;
+                shownOrderLanguage = Loc.Language;
+                orderTitle.text = "► " + StepText(o, product);
+                string productName = product != null ? Loc.T(product.nameKey) : "";
+                orderSub.text = Loc.T(order.CustomerKey) + " · " + order.Quantity + " " + productName + " · " + Loc.T("order.net", o.CalculatePayout().Net);
+            }
 
             for (int i = 0; i < stepPips.Count; i++)
                 stepPips[i].color = i < o.StepIndex ? Palette.UiGreen : (i == o.StepIndex ? Palette.UiAccent : Palette.UiGrey);
@@ -349,13 +361,15 @@ namespace PrintshopTycoon
                 orderBadgeBg.gameObject.SetActive(true);
                 bool late = o.SpecialExpired;
                 orderBadgeBg.color = late ? Palette.UiGrey : (o.SpecialRemaining < 30f && Mathf.Repeat(Time.time * 2f, 1f) > 0.5f ? Palette.UiCoin : CharacterFactory.BrandRed);
-                orderBadge.text = late ? "0:00" : FormatTime(o.SpecialRemaining);
+                int secondsLeft = late ? 0 : Mathf.CeilToInt(o.SpecialRemaining);
+                if (secondsLeft != shownBadgeSeconds) { shownBadgeSeconds = secondsLeft; orderBadge.text = FormatTime(secondsLeft); }
             }
             else if (o.OfferedSpecial != null)
             {
                 orderBadgeBg.gameObject.SetActive(true);
                 orderBadgeBg.color = CharacterFactory.BrandRed;
                 orderBadge.text = "♦";
+                shownBadgeSeconds = -1;
             }
             else orderBadgeBg.gameObject.SetActive(false);
 

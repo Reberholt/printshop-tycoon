@@ -126,6 +126,8 @@ namespace PrintshopTycoon
         readonly Dictionary<object, WorldTag> worldTags = new Dictionary<object, WorldTag>();
         readonly List<WorldTag> visibleTags = new List<WorldTag>();
         readonly List<object> tagRemoval = new List<object>();
+        float tagTextTimer;
+        bool refreshTagText;
 
         void LateUpdate()
         {
@@ -136,6 +138,9 @@ namespace PrintshopTycoon
         void UpdateWorldLabels()
         {
             var cam = game.Cameras.Camera;
+            tagTextTimer -= Time.unscaledDeltaTime;
+            refreshTagText = tagTextTimer <= 0f;
+            if (refreshTagText) tagTextTimer = 0.125f; // label text at 8 Hz, positions every frame
             foreach (var t in worldTags.Values) t.used = false;
             visibleTags.Clear();
             bool factory = game.Cameras.Mode == CameraMode.Factory && !game.Cameras.IsTransitioning;
@@ -144,7 +149,8 @@ namespace PrintshopTycoon
             foreach (var w in game.WorkerViews)
             {
                 float progress = w.Machine.State == WorkerState.Working || w.Machine.State == WorkerState.Packing ? w.Machine.TaskProgress : -1f;
-                PlaceTag(w, w.LabelPosition, Loc.T("staff.worker", GameManager.WorkerNumber(w.Machine.Id)) + " · " + w.StatusText, Palette.UiPurple, progress, cam, 340f);
+                string text = refreshTagText || !worldTags.ContainsKey(w) ? Loc.T("staff.worker", GameManager.WorkerNumber(w.Machine.Id)) + " · " + w.StatusText : null;
+                PlaceTag(w, w.LabelPosition, text, Palette.UiPurple, progress, cam, 340f);
             }
 
             // Machines: progress bar while working, "Klar!" when ready. Names only in factory mode.
@@ -203,7 +209,7 @@ namespace PrintshopTycoon
             tag.fillTrack.gameObject.SetActive(hasBar);
             if (hasBar) tag.fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(progress), 1f);
             tag.bg.color = new Color(color.r, color.g, color.b, 0.9f);
-            if (tag.text.text != text) tag.text.text = text;
+            if (text != null && tag.text.text != text) tag.text.text = text;
             tag.root.localScale = pulse ? Vector3.one * (1f + Mathf.Sin(Time.unscaledTime * 6f) * 0.06f) : Vector3.one;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, sp, null, out var local))
                 tag.root.anchoredPosition = local;

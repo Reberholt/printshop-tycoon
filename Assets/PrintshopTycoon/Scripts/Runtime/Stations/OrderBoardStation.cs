@@ -8,6 +8,7 @@ namespace PrintshopTycoon
     {
         GameObject highlightNote;
         GameObject specialNote;
+        Vector3 specialBaseScale;
 
         public override string DisplayName => Loc.T("station.board");
 
@@ -33,6 +34,7 @@ namespace PrintshopTycoon
             var station = root.gameObject.AddComponent<OrderBoardStation>();
             station.highlightNote = note;
             station.specialNote = special;
+            station.specialBaseScale = special.transform.localScale;
             station.Body = Shapes.AddCollider(root.gameObject, new Vector3(0f, 1.2f, 0f), new Vector3(f.width, 2.4f, f.depth));
             return station;
         }
@@ -45,7 +47,7 @@ namespace PrintshopTycoon
             if (offered) highlightNote.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 3f) * 4f);
             bool special = Session.Orders.OfferedSpecial != null;
             specialNote.SetActive(special);
-            if (special) specialNote.transform.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * 5f) * 0.06f);
+            if (special) specialNote.transform.localScale = specialBaseScale * (1f + Mathf.Sin(Time.time * 5f) * 0.06f);
         }
 
         public override bool TryGetAction(out string label)

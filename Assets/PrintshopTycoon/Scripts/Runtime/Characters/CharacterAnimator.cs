@@ -84,8 +84,9 @@ namespace PrintshopTycoon
             Rotate(legR, -legSwing, 0f, dt);
             Rotate(armL, armBase + armSwing, pose == CharacterPose.Celebrate ? -20f : 0f, dt);
             Rotate(armR, armBase - armSwing, pose == CharacterPose.Celebrate ? 20f : 0f, dt);
-            Rotate(head, headTilt * 0.3f, headTilt, dt);
-            Rotate(hips, lean, 0f, dt);
+            // Negative X tips upright parts toward the face (-z in the rig), i.e. forward.
+            Rotate(head, -headTilt * 0.3f, headTilt, dt);
+            Rotate(hips, -lean * 0.5f, 0f, dt);
         }
 
         static void Rotate(Transform t, float x, float z, float dt)
