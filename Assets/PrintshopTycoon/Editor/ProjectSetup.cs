@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using PrintshopTycoon.Core;
 using UnityEditor;
@@ -92,10 +93,28 @@ namespace PrintshopTycoon.EditorTools
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
-            // iOS
-            PlayerSettings.iOS.buildNumber = "1";
-            PlayerSettings.iOS.targetOSVersionString = "13.0";
+            // iOS / TestFlight. Unity 6 supports iOS 15+; iPhone only and portrait only keeps
+            // App Store review simple (iPad would require all orientations or "requires full screen").
+            PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("PT_BUILD_NUMBER") ?? PlayerSettings.iOS.buildNumber;
+            if (string.IsNullOrEmpty(PlayerSettings.iOS.buildNumber) || PlayerSettings.iOS.buildNumber == "0") PlayerSettings.iOS.buildNumber = "1";
+            PlayerSettings.iOS.targetOSVersionString = "15.0";
+            PlayerSettings.iOS.targetDevice = iOSTargetDevice.iPhoneOnly;
+            PlayerSettings.iOS.sdkVersion = iOSSdkVersion.DeviceSDK;
+            PlayerSettings.iOS.requiresFullScreen = true;
+            PlayerSettings.iOS.requiresPersistentWiFi = false;
+            PlayerSettings.iOS.allowHTTPDownload = false;
+            PlayerSettings.iOS.deferSystemGesturesMode = UnityEngine.iOS.SystemGestureDeferMode.BottomEdge; // joystick/buttons sit at the bottom edge
+            PlayerSettings.iOS.hideHomeButton = false;
+            PlayerSettings.statusBarHidden = true;
+            PlayerSettings.accelerometerFrequency = 0;   // not used - saves battery
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS, ScriptingImplementation.IL2CPP);
+            PlayerSettings.SetArchitecture(NamedBuildTarget.iOS, 1); // ARM64 only
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.iOS, ManagedStrippingLevel.Medium);
+            PlayerSettings.stripEngineCode = true;
+            // Signing: automatic, with the team id from the environment (never committed).
+            string team = Environment.GetEnvironmentVariable("PT_APPLE_TEAM_ID");
+            PlayerSettings.iOS.appleEnableAutomaticSigning = true;
+            if (!string.IsNullOrEmpty(team)) PlayerSettings.iOS.appleDeveloperTeamID = team;
 
             // Enable both input backends: game code uses the EventSystem and supports either.
             var settings = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
@@ -128,7 +147,7 @@ namespace PrintshopTycoon.EditorTools
             urp.supportsHDR = false;
             urp.msaaSampleCount = 2;
             urp.renderScale = 1f;
-            urp.shadowDistance = 30f;
+            urp.shadowDistance = 26f;              // the workshop is 16 m deep; closer = sharper + cheaper
             urp.shadowCascadeCount = 1;
             urp.supportsCameraDepthTexture = false;
             urp.supportsCameraOpaqueTexture = false;

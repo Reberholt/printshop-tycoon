@@ -37,6 +37,11 @@
 3. Game-vinduet → **Simulator** → vælg en iPhone → tryk **▶ Play**.
 4. Tests: **Window → General → Test Runner** → EditMode og PlayMode.
 
+## iPhone og TestFlight
+- Projektet er sat op til iOS (portræt, kun iPhone, iOS 15+, automatisk signering, TestFlight-klare plist-indstillinger).
+- Ét script på Mac'en bygger og uploader: `PT_APPLE_TEAM_ID=… Tools/iOS/build_testflight.sh`
+- Hele vejledningen, og hvad der kræver Apple Developer-konto: **`docs/IOS_TESTFLIGHT.md`**.
+
 ## Video, skærmbilleder og WebGL
 - **Video (20–40 sek.):**
   - Klik **Printshop Tycoon → Record Gameplay Preview**. Første klik installerer Unity Recorder; klik igen bagefter.

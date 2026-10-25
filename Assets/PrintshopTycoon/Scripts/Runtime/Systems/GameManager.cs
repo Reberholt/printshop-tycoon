@@ -46,6 +46,8 @@ namespace PrintshopTycoon
         void Awake()
         {
             Application.targetFrameRate = 60;
+            QualitySettings.vSyncCount = 0;          // mobile: frame rate is governed by targetFrameRate
+            Input.multiTouchEnabled = true;         // joystick + button at the same time
             Screen.orientation = ScreenOrientation.Portrait;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 

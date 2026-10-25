@@ -28,8 +28,13 @@ namespace PrintshopTycoon
 
             BuildLighting(r.Root);
             r.Camera = BuildCamera();
-            BuildRoom(r.Root);
-            BuildDecor(r.Root);
+            // Room and props never move: build them under one parent and static-batch them
+            // (one draw call per material instead of hundreds - matters on phones).
+            var statics = new GameObject("Static").transform;
+            statics.SetParent(r.Root, false);
+            BuildRoom(statics);
+            BuildDecor(statics);
+            StaticBatchingUtility.Combine(statics.gameObject);
 
             r.Board = OrderBoardStation.Build(r.Root, WorkshopLayout.OrderBoard);
             r.Shelf = ShelfStation.Build(r.Root, WorkshopLayout.Shelf);
@@ -49,7 +54,7 @@ namespace PrintshopTycoon
             sun.type = LightType.Directional;
             sun.color = new Color(1f, 0.96f, 0.88f);
             sun.intensity = 1.15f;
-            sun.shadows = LightShadows.Soft;
+            sun.shadows = LightShadows.Soft;        // URP soft shadows are cheap at one cascade
             sun.shadowStrength = 0.55f;
             sun.transform.rotation = Quaternion.Euler(55f, 35f, 0f);
 
