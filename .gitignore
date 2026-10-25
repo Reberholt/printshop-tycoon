@@ -31,3 +31,4 @@
 /Tools/CompileCheck/obj/
 /Screenshots/
 gameplay-preview.mp4
+__pycache__/
